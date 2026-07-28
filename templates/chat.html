@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}Chat - MemoryBot{% endblock %}
+{% block body %}
+<div class="min-h-full flex">
+    {% include "partials/sidebar.html" %}
+    <div class="flex-1" style="margin-left:256px;display:flex;height:100vh;">
+        <div style="width:280px;border-right:1px solid var(--border-primary);background:var(--bg-secondary);display:flex;flex-direction:column;flex-shrink:0;">
+            <div style="padding:16px;border-bottom:1px solid var(--border-primary);">
+                <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Select Profile</label>
+                <select id="profileSelect" class="select-field" style="font-size:13px;padding:10px 14px;">
+                    <option value="">Choose a profile...</option>
+                    {% for p in profiles %}
+                    <option value="{{ p.id }}" {% if active_profile_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="chat-scroll" style="flex:1;overflow-y:auto;padding:8px;">
+                <div id="convoList">
+                    {% for c in conversations %}
+                    <div style="display:flex;align-items:center;margin-bottom:2px;" onmouseover="this.querySelector('.convo-delete').style.opacity='1'" onmouseout="this.querySelector('.convo-delete').style.opacity='0'">
+                        <a href="/chat/{{ c.profile_id }}/conversation/{{ c.id }}" style="display:block;padding:10px 14px;border-radius:10px;font-size:13px;color:var(--text-secondary);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all 0.15s;border:1px solid transparent;flex:1;{% if active_conversation and active_conversation.id == c.id %}background:rgba(139,92,246,0.1);color:var(--accent-purple);border-color:rgba(139,92,246,0.3);{% endif %}">
+                            {{ c.title }}
+                        </a>
+                        <button class="convo-delete" onclick="event.preventDefault();if(confirm('Delete this conversation?'))fetch('/chat/{{ c.id }}/delete',{method:'POST'}).then(()=>location.reload())" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px 8px;border-radius:6px;opacity:0;transition:opacity 0.15s;flex-shrink:0;" title="Delete conversation">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div style="padding:12px;border-top:1px solid var(--border-primary);">
+                <button onclick="newConversation()" class="btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:13px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    New Conversation
+                </button>
+            </div>
+        </div>
+
+        <div style="flex:1;display:flex;flex-direction:column;background:var(--bg-primary);">
+            <div style="background:var(--bg-secondary);border-bottom:1px solid var(--border-primary);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                    <h2 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0;" id="chatTitle">
+                        {% if active_profile_id %}
+                            {% for p in profiles %}
+                                {% if p.id == active_profile_id %}{{ p.name }}{% endif %}
+                            {% endfor %}
+                        {% else %}
+                            Select a profile to start chatting
+                        {% endif %}
+                    </h2>
+                    {% if active_profile_id %}
+                    <p style="font-size:11px;color:var(--text-muted);margin:3px 0 0;opacity:0.7;">Responses are based on uploaded memories and personality.</p>
+                    {% endif %}
+                </div>
+                {% if active_profile_id %}
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <button onclick="toggleVoice()" id="voiceBtn" class="voice-btn" title="Toggle voice readout">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+
+            <div id="messagesContainer" class="chat-scroll" style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;">
+                {% if messages %}
+                    {% for msg in messages %}
+                    <div class="fade-in" style="display:flex;{% if msg.role == 'user' %}justify-content:flex-end;{% else %}justify-content:flex-start;{% endif %}">
+                        <div class="{% if msg.role == 'user' %}msg-user{% else %}msg-assistant{% endif %}">
+                            <div style="font-size:14px;line-height:1.6;" id="msg-{{ msg.id }}">
+                                {% if msg.role == 'assistant' %}
+                                <div class="prose" id="rendered-msg-{{ msg.id }}">{{ msg.content }}</div>
+                                {% else %}
+                                {{ msg.content }}
+                                {% endif %}
+                            </div>
+                            <p style="font-size:11px;margin:6px 0 0;{% if msg.role == 'user' %}color:rgba(255,255,255,0.6);{% else %}color:var(--text-muted);{% endif %}">
+                                {{ msg.created_at.strftime('%H:%M') if msg.created_at else '' }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+                    <div style="text-align:center;">
+                        <div class="empty-state-icon" style="width:72px;height:72px;margin:0 auto 20px;">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        </div>
+                        <h3 style="font-size:18px;font-weight:700;color:var(--text-primary);margin:0 0 8px;">Start a Conversation</h3>
+                        <p style="color:var(--text-secondary);font-size:14px;margin:0;">
+                            {% if active_profile_id %}
+                            Say something to get the conversation started.
+                            {% else %}
+                            Select a memory profile to start chatting.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if active_profile_id %}
+            <div style="background:var(--bg-secondary);border-top:1px solid var(--border-primary);padding:16px 24px;">
+                <div style="display:flex;align-items:flex-end;gap:12px;max-width:800px;margin:0 auto;">
+                    <button onclick="startRecording()" id="micBtn" class="mic-btn" title="Record voice message">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    </button>
+                    <div style="flex:1;position:relative;">
+                        <textarea id="messageInput" rows="1" placeholder="Type a message..." class="input-field" style="resize:none;min-height:44px;max-height:120px;padding:12px 16px;border-radius:22px;" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"></textarea>
+                    </div>
+                    <button onclick="sendMessage()" id="sendBtn" class="send-btn" title="Send message">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+const profileId = {{ active_profile_id|tojson if active_profile_id else 'null' }};
+const conversationId = {{ active_conversation.id|tojson if active_conversation else 'null' }};
+let currentConversationId = conversationId;
+let isRecording = false;
+let voiceEnabled = false;
+let mediaRecorder = null;
+
+function renderMarkdown(text) {
+    if (!text) return '';
+    text = text.replace(/<\|[^|]*\|>/g, '').replace(/User Safety:\s*\w+/gi, '').replace(/Response Safety:\s*\w+/gi, '').replace(/<<\|\/?\w+\|?>>/g, '').replace(/\[(?:SYSTEM|SAFETY|NOTE)\].*/gi, '').trim();
+    return text
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+       .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+        .replace(/(<li>.*<\/li>\n?)+/g, (m) => '<ul>' + m + '</ul>')
+        .replace(/\n{2,}/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/^(.+)$/gm, (m) => m.startsWith('<') ? m : '<p>' + m + '</p>');
+}
+
+document.getElementById('profileSelect').addEventListener('change', function() {
+    if (this.value) window.location.href = '/chat/' + this.value;
+});
+
+function newConversation() {
+    const sel = document.getElementById('profileSelect');
+    if (sel.value) window.location.href = '/chat/' + sel.value;
+    else alert('Please select a profile first');
+}
+
+let lastTokenWasText = false;
+
+function joinTokens(fullText, token) {
+    const needsSpace = lastTokenWasText && token.length > 0 && /[a-zA-Z0-9]/.test(token[0]) && /[a-zA-Z0-9]/.test(fullText.slice(-1));
+    lastTokenWasText = token.length > 0 && /[a-zA-Z0-9]/.test(token.slice(-1));
+    return fullText + (needsSpace ? ' ' : '') + token;
+}
+
+async function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+    if (!content || !profileId) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    lastTokenWasText = false;
+
+    appendMessage('user', content);
+
+    const assistantDiv = appendMessage('assistant', '<div style="display:flex;gap:4px;padding:8px 0;"><span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);display:inline-block;"></span><span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);display:inline-block;"></span><span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);display:inline-block;"></span></div>');
+    const assistantContent = assistantDiv.querySelector('.prose');
+
+    document.getElementById('sendBtn').disabled = true;
+
+    try {
+        const resp = await fetch('/chat/message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ profile_id: profileId, conversation_id: currentConversationId, content }),
+        });
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop();
+            for (const part of parts) {
+                const lines = part.split('\n');
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.error) {
+                                assistantContent.innerHTML = '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px 16px;color:var(--accent-red);font-size:13px;">' + data.error + '</div>';
+                            } else                             if (data.token) {
+                                fullText = joinTokens(fullText, data.token);
+                                let clean = fullText.replace(/<\|[^|]*\|>/g, '').replace(/User Safety:\s*\w+/gi, '').replace(/Response Safety:\s*\w+/gi, '').replace(/<<\|\/?\w+\|?>>/g, '').replace(/\[(?:SYSTEM|SAFETY|NOTE)\].*/gi, '').trim();
+                                clean = clean.replace(/([.!?,;:])([A-Za-z])/g, '$1 $2');
+                                assistantContent.innerHTML = renderMarkdown(clean);
+                            }
+                            if (data.done) {
+                                currentConversationId = data.conversation_id;
+                                if (voiceEnabled && fullText && !data.error) speak(fullText);
+                            }
+                        } catch (e) {
+                            console.error('SSE parse error:', e, line);
+                        }
+                    }
+                }
+            }
+            scrollToBottom();
+        }
+    } catch (e) {
+        assistantContent.innerHTML = '<span style="color:var(--accent-red);">Error: ' + e.message + '</span>';
+    }
+
+    document.getElementById('sendBtn').disabled = false;
+    scrollToBottom();
+}
+
+function appendMessage(role, content) {
+    const container = document.getElementById('messagesContainer');
+    const div = document.createElement('div');
+    div.className = 'fade-in';
+    div.style.display = 'flex';
+    div.style.justifyContent = role === 'user' ? 'flex-end' : 'flex-start';
+    const isAssistant = role === 'assistant';
+    div.innerHTML = `
+        <div class="${isAssistant ? 'msg-assistant' : 'msg-user'}">
+            <div style="font-size:14px;line-height:1.6;">
+                ${isAssistant ? '<div class="prose">' + content + '</div>' : content}
+            </div>
+        </div>`;
+    container.appendChild(div);
+    scrollToBottom();
+    return div;
+}
+
+function scrollToBottom() {
+    const c = document.getElementById('messagesContainer');
+    c.scrollTop = c.scrollHeight;
+}
+
+function toggleVoice() {
+    voiceEnabled = !voiceEnabled;
+    const btn = document.getElementById('voiceBtn');
+    btn.classList.toggle('active', voiceEnabled);
+}
+
+async function speak(text) {
+    try {
+        const resp = await fetch('/voice/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text.substring(0, 2000) }),
+        });
+        if (resp.ok) {
+            const blob = await resp.blob();
+            const audio = new Audio(URL.createObjectURL(blob));
+            audio.play();
+        }
+    } catch (e) {}
+}
+
+async function startRecording() {
+    const micBtn = document.getElementById('micBtn');
+    if (isRecording) {
+        mediaRecorder && mediaRecorder.stop();
+        isRecording = false;
+        micBtn.classList.remove('recording');
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        const chunks = [];
+        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+        mediaRecorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            const formData = new FormData();
+            formData.append('audio', blob, 'recording.webm');
+            try {
+                const resp = await fetch('/voice/stt', { method: 'POST', body: formData });
+                const data = await resp.json();
+                if (data.text) {
+                    document.getElementById('messageInput').value = data.text;
+                }
+            } catch (e) {}
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        micBtn.classList.add('recording');
+    } catch (e) {
+        alert('Microphone access denied');
+    }
+}
+
+scrollToBottom();
+
+document.querySelectorAll('[id^="rendered-msg-"]').forEach(el => {
+    el.innerHTML = renderMarkdown(el.textContent);
+});
+</script>
+{% endblock %}

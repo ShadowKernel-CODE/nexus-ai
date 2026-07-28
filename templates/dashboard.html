@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - MemoryBot{% endblock %}
+{% block body %}
+<div class="min-h-full flex">
+    {% include "partials/sidebar.html" %}
+    <div style="flex:1;margin-left:256px;padding:32px;">
+        <div style="max-width:1100px;margin:0 auto;">
+            <div class="slide-up" style="margin-bottom:32px;">
+                <h1 style="font-size:28px;font-weight:800;color:var(--text-primary);margin:0;">Welcome back, {{ user.name }}</h1>
+                <p style="margin-top:6px;color:var(--text-secondary);font-size:15px;">Here's an overview of your memory companions</p>
+            </div>
+
+            <div class="alert-warning slide-up" style="margin-bottom:32px;display:flex;align-items:flex-start;gap:12px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <div>
+                    <strong>Important:</strong> MemoryBot uses AI to simulate conversations. The AI is NOT the actual person being remembered. Responses are generated based on uploaded memories and context.
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:32px;">
+                <div class="stat-card purple slide-up">
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <div style="width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(139,92,246,0.15);">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </div>
+                        <div>
+                            <p style="font-size:12px;color:var(--text-muted);margin:0;text-transform:uppercase;letter-spacing:0.05em;">Profiles</p>
+                            <p style="font-size:32px;font-weight:800;color:var(--text-primary);margin:0;">{{ profiles|length }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card blue slide-up">
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <div style="width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(59,130,246,0.15);">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        </div>
+                        <div>
+                            <p style="font-size:12px;color:var(--text-muted);margin:0;text-transform:uppercase;letter-spacing:0.05em;">Conversations</p>
+                            <p style="font-size:32px;font-weight:800;color:var(--text-primary);margin:0;">{{ total_conversations }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card green slide-up">
+                    <div style="display:flex;align-items:center;gap:16px;">
+                        <div style="width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(16,185,129,0.15);">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <div>
+                            <p style="font-size:12px;color:var(--text-muted);margin:0;text-transform:uppercase;letter-spacing:0.05em;">Files</p>
+                            <p style="font-size:32px;font-weight:800;color:var(--text-primary);margin:0;">{{ total_files }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+                <div class="card" style="padding:0;overflow:hidden;">
+                    <div style="padding:20px 24px;" style="border-bottom:1px solid var(--border-primary);">
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <h2 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0;">Memory Profiles</h2>
+                            <a href="/profiles" class="badge badge-purple" style="text-decoration:none;">View all</a>
+                        </div>
+                    </div>
+                    <div style="padding:16px 24px 24px;">
+                        {% if profiles %}
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            {% for p in profiles %}
+                            <a href="/profiles/{{ p.id }}" class="flex items-center gap-3" style="padding:12px 16px;border-radius:12px;text-decoration:none;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='var(--bg-card-hover)';this.style.borderColor='var(--border-primary)'" onmouseout="this.style.background='';this.style.borderColor='transparent'">
+                                <div class="avatar avatar-md avatar-purple">{{ p.name[0] }}</div>
+                                <div style="flex:1;min-width:0;">
+                                    <p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0;">{{ p.name }}</p>
+                                    {% if p.relationship_type %}
+                                    <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0;">{{ p.relationship_type }}</p>
+                                    {% endif %}
+                                </div>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state" style="padding:32px 16px;">
+                            <div class="empty-state-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                            </div>
+                            <p style="color:var(--text-secondary);font-size:14px;margin:0 0 16px;">No profiles yet</p>
+                            <a href="/profiles" class="btn-primary" style="text-decoration:none;font-size:13px;padding:8px 20px;">Create Profile</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card" style="padding:0;overflow:hidden;">
+                    <div style="padding:20px 24px;" style="border-bottom:1px solid var(--border-primary);">
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <h2 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0;">Recent Conversations</h2>
+                            <a href="/chat" class="badge badge-blue" style="text-decoration:none;">View all</a>
+                        </div>
+                    </div>
+                    <div style="padding:16px 24px 24px;">
+                        {% if recent_conversations %}
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            {% for c in recent_conversations %}
+                            <a href="/chat/{{ c.profile_id }}/conversation/{{ c.id }}" style="padding:12px 16px;border-radius:12px;text-decoration:none;transition:all 0.2s;border:1px solid transparent;" onmouseover="this.style.background='var(--bg-card-hover)';this.style.borderColor='var(--border-primary)'" onmouseout="this.style.background='';this.style.borderColor='transparent'">
+                                <p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.title }}</p>
+                                <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">{{ recent_conv_profiles.get(c.id, '') }} &middot; {{ c.updated_at.strftime('%b %d, %Y at %H:%M') if c.updated_at else '' }}</p>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state" style="padding:32px 16px;">
+                            <div class="empty-state-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                            </div>
+                            <p style="color:var(--text-secondary);font-size:14px;margin:0 0 16px;">No conversations yet</p>
+                            <a href="/chat" class="btn-primary" style="text-decoration:none;font-size:13px;padding:8px 20px;">Start Chatting</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

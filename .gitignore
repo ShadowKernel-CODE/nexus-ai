@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.db
+.env
+uploads/*
+!uploads/.gitkeep
+*.wav
+*.mp3
+test_py*

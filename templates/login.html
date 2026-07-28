@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Login - MemoryBot{% endblock %}
+{% block body %}
+<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg-primary);padding:16px;">
+    <div style="max-width:440px;width:100%;">
+        <div class="text-center" style="margin-bottom:32px;">
+            <div class="avatar avatar-xl" style="background:var(--gradient-primary);margin:0 auto 20px;box-shadow:0 0 40px rgba(139,92,246,0.3);">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                </svg>
+            </div>
+            <h1 style="font-size:32px;font-weight:800;color:var(--text-primary);margin:0;">MemoryBot</h1>
+            <p style="margin-top:8px;color:var(--text-secondary);font-size:15px;">AI Memory Companion</p>
+        </div>
+
+        <div class="card" style="padding:32px;">
+            <div class="alert-warning" style="margin-bottom:24px;text-align:center;">
+                <strong>Disclaimer:</strong> This is an AI simulation. The AI is NOT the actual person being remembered.
+            </div>
+
+            {% if error %}
+            <div class="alert-error" style="margin-bottom:16px;text-align:center;">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="/auth/login" style="display:flex;flex-direction:column;gap:16px;">
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Email</label>
+                    <input type="email" name="email" required class="input-field" placeholder="you@example.com">
+                </div>
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Password</label>
+                    <input type="password" name="password" required class="input-field" placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:15px;margin-top:8px;">
+                    Sign In
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+            </form>
+
+            <div class="divider" style="margin:24px 0;"></div>
+
+            <p style="text-align:center;font-size:14px;color:var(--text-secondary);">
+                Don't have an account?
+                <a href="/auth/register" style="color:var(--accent-purple);text-decoration:none;font-weight:600;">Sign up</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
