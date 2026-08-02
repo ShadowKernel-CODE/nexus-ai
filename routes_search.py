@@ -18,7 +18,7 @@ async def search_page(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
     profiles = db.query(MemoryProfile).filter(MemoryProfile.user_id == user.id).all()
-    return templates.TemplateResponse("search.html", {
+    return templates.TemplateResponse(request, "search.html", {
         "request": request, "user": user, "profiles": profiles,
         "results": [], "query": "",
     })
@@ -51,7 +51,7 @@ async def search_execute(request: Request, db: Session = Depends(get_db)):
             results.extend(memories)
         results.sort(key=lambda x: x.get("score", 0), reverse=True)
 
-    return templates.TemplateResponse("search.html", {
+    return templates.TemplateResponse(request, "search.html", {
         "request": request, "user": user, "profiles": profiles,
         "results": results, "query": query, "selected_profile": profile_id,
     })

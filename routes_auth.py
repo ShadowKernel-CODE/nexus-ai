@@ -16,7 +16,7 @@ async def login_page(request: Request, db: Session = Depends(get_db)):
     user = get_user_from_request(request, db)
     if user:
         return RedirectResponse(url="/dashboard", status_code=302)
-    return templates.TemplateResponse("login.html", {"request": request, "user": None, "error": None})
+    return templates.TemplateResponse(request, "login.html", {"request": request, "user": None, "error": None})
 
 
 @router.post("/login")
@@ -30,7 +30,7 @@ async def login(
     templates = Jinja2Templates(directory="templates")
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.password_hash):
-        return templates.TemplateResponse("login.html", {
+        return templates.TemplateResponse(request, "login.html", {
             "request": request,
             "user": None,
             "error": "Invalid email or password",
@@ -49,7 +49,7 @@ async def register_page(request: Request, db: Session = Depends(get_db)):
     user = get_user_from_request(request, db)
     if user:
         return RedirectResponse(url="/dashboard", status_code=302)
-    return templates.TemplateResponse("register.html", {"request": request, "user": None, "error": None})
+    return templates.TemplateResponse(request, "register.html", {"request": request, "user": None, "error": None})
 
 
 @router.post("/register")
@@ -65,7 +65,7 @@ async def register(
 
     existing = db.query(User).filter(User.email == email).first()
     if existing:
-        return templates.TemplateResponse("register.html", {
+        return templates.TemplateResponse(request, "register.html", {
             "request": request,
             "user": None,
             "error": "An account with this email already exists",

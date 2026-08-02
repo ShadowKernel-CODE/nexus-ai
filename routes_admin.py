@@ -29,7 +29,7 @@ async def admin_page(request: Request, db: Session = Depends(get_db)):
     users = db.query(User).all()
     profiles = db.query(MemoryProfile).all()
 
-    return templates.TemplateResponse("admin.html", {
+    return templates.TemplateResponse(request, "admin.html", {
         "request": request, "user": user, "stats": stats,
         "recent_logs": recent_logs, "users": users, "profiles": profiles,
     })

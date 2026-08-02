@@ -75,7 +75,7 @@ async def dashboard(request: Request):
             if p:
                 recent_conv_profiles[rc.id] = p.name
 
-        return templates.TemplateResponse("dashboard.html", {
+        return templates.TemplateResponse(request, "dashboard.html", {
             "request": request, "user": user, "profiles": profiles,
             "total_conversations": total_conversations,
             "total_files": total_files,

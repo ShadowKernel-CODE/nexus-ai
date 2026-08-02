@@ -24,7 +24,7 @@ async def profiles_page(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
     profiles = db.query(MemoryProfile).filter(MemoryProfile.user_id == user.id).order_by(MemoryProfile.created_at.desc()).all()
-    return templates.TemplateResponse("profiles.html", {"request": request, "user": user, "profiles": profiles})
+    return templates.TemplateResponse(request, "profiles.html", {"request": request, "user": user, "profiles": profiles})
 
 
 @router.post("/create")
@@ -90,7 +90,7 @@ async def profile_detail(request: Request, profile_id: str, db: Session = Depend
     total_messages = 0
     for conv in conversations:
         total_messages += db.query(Message).filter(Message.conversation_id == conv.id).count()
-    return templates.TemplateResponse("profile_detail.html", {
+    return templates.TemplateResponse(request, "profile_detail.html", {
         "request": request, "user": user, "profile": profile, "files": files,
         "conversations": conversations, "total_messages": total_messages,
     })
@@ -283,7 +283,7 @@ async def profile_timeline(request: Request, profile_id: str, db: Session = Depe
             key = item["date"].strftime("%B %Y")
             monthly[key].append(item)
 
-    return templates.TemplateResponse("timeline.html", {
+    return templates.TemplateResponse(request, "timeline.html", {
         "request": request, "user": user, "profile": profile,
         "monthly": dict(monthly),
     })

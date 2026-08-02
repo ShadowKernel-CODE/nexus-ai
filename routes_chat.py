@@ -25,7 +25,7 @@ async def chat_page(request: Request, db: Session = Depends(get_db)):
             Conversation.user_id == user.id,
             Conversation.profile_id.in_(profile_ids),
         ).order_by(Conversation.updated_at.desc()).limit(20).all()
-    return templates.TemplateResponse("chat.html", {
+    return templates.TemplateResponse(request, "chat.html", {
         "request": request, "user": user, "profiles": profiles,
         "conversations": conversations, "active_profile_id": None,
         "active_conversation": None,
@@ -49,7 +49,7 @@ async def chat_profile(request: Request, profile_id: str, db: Session = Depends(
         Conversation.user_id == user.id,
         Conversation.profile_id == profile_id,
     ).order_by(Conversation.updated_at.desc()).limit(20).all()
-    return templates.TemplateResponse("chat.html", {
+    return templates.TemplateResponse(request, "chat.html", {
         "request": request, "user": user, "profiles": profiles,
         "conversations": conversations, "active_profile_id": profile_id,
         "active_conversation": None,
@@ -78,7 +78,7 @@ async def chat_conversation(request: Request, profile_id: str, conversation_id: 
         Conversation.profile_id == profile_id,
     ).order_by(Conversation.updated_at.desc()).limit(20).all()
     messages = db.query(Message).filter(Message.conversation_id == conversation_id).order_by(Message.created_at).all()
-    return templates.TemplateResponse("chat.html", {
+    return templates.TemplateResponse(request, "chat.html", {
         "request": request, "user": user, "profiles": profiles,
         "conversations": conversations, "active_profile_id": profile_id,
         "active_conversation": conversation, "messages": messages,
