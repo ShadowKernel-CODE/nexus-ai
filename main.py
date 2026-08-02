@@ -37,6 +37,12 @@ async def startup():
     os.makedirs("static/js", exist_ok=True)
     os.makedirs("static/css", exist_ok=True)
     os.makedirs("templates", exist_ok=True)
+    try:
+        from seed import seed
+        seed()
+    except Exception:
+        import traceback
+        traceback.print_exc()
 
 
 @app.get("/", response_class=HTMLResponse)
