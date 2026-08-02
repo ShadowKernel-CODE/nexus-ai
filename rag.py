@@ -25,7 +25,6 @@ def clean_token(token: str) -> str:
     token = re.sub(r'<\|/?(im_start|im_end|system|user|assistant)\|?>', '', token)
     token = re.sub(r'<<\|/?(im_start|im_end)\|?>>', '', token)
     token = re.sub(r'\[(?:SYSTEM|SAFETY|NOTE)\].*', '', token)
-    token = token.strip()
     return token
 
 

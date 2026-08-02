@@ -155,12 +155,8 @@ function newConversation() {
     else alert('Please select a profile first');
 }
 
-let lastTokenWasText = false;
-
 function joinTokens(fullText, token) {
-    const needsSpace = lastTokenWasText && token.length > 0 && /[a-zA-Z0-9]/.test(token[0]) && /[a-zA-Z0-9]/.test(fullText.slice(-1));
-    lastTokenWasText = token.length > 0 && /[a-zA-Z0-9]/.test(token.slice(-1));
-    return fullText + (needsSpace ? ' ' : '') + token;
+    return fullText + token;
 }
 
 async function sendMessage() {
@@ -170,7 +166,6 @@ async function sendMessage() {
 
     input.value = '';
     input.style.height = 'auto';
-    lastTokenWasText = false;
 
     appendMessage('user', content);
 
