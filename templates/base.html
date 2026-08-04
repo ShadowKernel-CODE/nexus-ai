@@ -1,16 +1,49 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MemoryBot{% endblock %}</title>
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
     {% block head %}{% endblock %}
 </head>
-<body class="h-full">
+<body>
     {% block body %}{% endblock %}
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+    function toast(message, type) {
+        var container = document.getElementById('toastContainer');
+        var el = document.createElement('div');
+        el.className = 'toast ' + (type || 'info');
+        el.textContent = message;
+        container.appendChild(el);
+        setTimeout(function () { el.remove(); }, 3500);
+    }
+
+    function toggleSidebar() {
+        var sb = document.getElementById('sidebar');
+        var ov = document.getElementById('sidebarOverlay');
+        if (!sb) return;
+        sb.classList.toggle('open');
+        if (ov) ov.classList.toggle('show', sb.classList.contains('open'));
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('navToggle');
+        if (btn) btn.addEventListener('click', toggleSidebar);
+        var ov = document.getElementById('sidebarOverlay');
+        if (ov) ov.addEventListener('click', function () {
+            document.getElementById('sidebar').classList.remove('open');
+            ov.classList.remove('show');
+        });
+    });
+    </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

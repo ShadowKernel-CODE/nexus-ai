@@ -1,12 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Chat - MemoryBot{% endblock %}
+{% block head %}
+<style>
+@media (max-width:1024px){
+    .chat-main{margin-left:0 !important;}
+    .chat-rail{display:none;}
+    .chat-sources{display:none;}
+    .chat-rail-select{display:block !important;}
+}
+.chat-main{height:100vh;display:flex;overflow:hidden;margin-left:var(--sidebar-width);}
+</style>
+{% endblock %}
 {% block body %}
-<div class="min-h-full flex">
+<div class="app-shell">
     {% include "partials/sidebar.html" %}
-    <div class="flex-1" style="margin-left:256px;display:flex;height:100vh;">
-        <div style="width:280px;border-right:1px solid var(--border-primary);background:var(--bg-secondary);display:flex;flex-direction:column;flex-shrink:0;">
+    <main class="chat-main">
+        <div class="chat-rail" style="width:280px;border-right:1px solid var(--border-primary);background:var(--ink-800);display:flex;flex-direction:column;flex-shrink:0;">
             <div style="padding:16px;border-bottom:1px solid var(--border-primary);">
-                <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Select Profile</label>
+                <label class="field-label" style="margin-bottom:8px;">Memory Companion</label>
                 <select id="profileSelect" class="select-field" style="font-size:13px;padding:10px 14px;">
                     <option value="">Choose a profile...</option>
                     {% for p in profiles %}
@@ -17,11 +28,11 @@
             <div class="chat-scroll" style="flex:1;overflow-y:auto;padding:8px;">
                 <div id="convoList">
                     {% for c in conversations %}
-                    <div style="display:flex;align-items:center;margin-bottom:2px;" onmouseover="this.querySelector('.convo-delete').style.opacity='1'" onmouseout="this.querySelector('.convo-delete').style.opacity='0'">
-                        <a href="/chat/{{ c.profile_id }}/conversation/{{ c.id }}" style="display:block;padding:10px 14px;border-radius:10px;font-size:13px;color:var(--text-secondary);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all 0.15s;border:1px solid transparent;flex:1;{% if active_conversation and active_conversation.id == c.id %}background:rgba(139,92,246,0.1);color:var(--accent-purple);border-color:rgba(139,92,246,0.3);{% endif %}">
+                    <div class="flex items-center" style="margin-bottom:2px;" onmouseover="this.querySelector('.convo-delete').style.opacity='1'" onmouseout="this.querySelector('.convo-delete').style.opacity='0'">
+                        <a href="/chat/{{ c.profile_id }}/conversation/{{ c.id }}" style="display:block;padding:10px 14px;border-radius:11px;font-size:13px;color:var(--cream-dim);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all 0.15s;border:1px solid transparent;flex:1;{% if active_conversation and active_conversation.id == c.id %}background:rgba(139,124,246,0.14);color:var(--lavender);border-color:rgba(139,124,246,0.35);{% endif %}">
                             {{ c.title }}
                         </a>
-                        <button class="convo-delete" onclick="event.preventDefault();if(confirm('Delete this conversation?'))fetch('/chat/{{ c.id }}/delete',{method:'POST'}).then(()=>location.reload())" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px 8px;border-radius:6px;opacity:0;transition:opacity 0.15s;flex-shrink:0;" title="Delete conversation">
+                        <button class="convo-delete" aria-label="Delete conversation" onclick="event.preventDefault();if(confirm('Delete this conversation?'))fetch('/chat/{{ c.id }}/delete',{method:'POST'}).then(()=>location.reload())" style="background:none;border:none;color:var(--cream-faint);cursor:pointer;padding:4px 8px;border-radius:6px;opacity:0;transition:opacity 0.15s;flex-shrink:0;" title="Delete conversation">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                         </button>
                     </div>
@@ -29,32 +40,39 @@
                 </div>
             </div>
             <div style="padding:12px;border-top:1px solid var(--border-primary);">
-                <button onclick="newConversation()" class="btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:13px;">
+                <button onclick="newConversation()" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     New Conversation
                 </button>
             </div>
         </div>
 
-        <div style="flex:1;display:flex;flex-direction:column;background:var(--bg-primary);">
-            <div style="background:var(--bg-secondary);border-bottom:1px solid var(--border-primary);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
-                <div>
-                    <h2 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0;" id="chatTitle">
-                        {% if active_profile_id %}
-                            {% for p in profiles %}
-                                {% if p.id == active_profile_id %}{{ p.name }}{% endif %}
-                            {% endfor %}
-                        {% else %}
-                            Select a profile to start chatting
-                        {% endif %}
-                    </h2>
-                    {% if active_profile_id %}
-                    <p style="font-size:11px;color:var(--text-muted);margin:3px 0 0;opacity:0.7;">Responses are based on uploaded memories and personality.</p>
-                    {% endif %}
+        <div style="flex:1;display:flex;flex-direction:column;background:var(--ink-900);min-width:0;">
+            <div style="background:var(--ink-800);border-bottom:1px solid var(--border-primary);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <div class="min-w-0">
+                    <div class="flex items-center" style="gap:10px;">
+                        <h2 style="font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--cream);margin:0;" id="chatTitle">
+                            {% if active_profile_id %}
+                                {% for p in profiles %}
+                                    {% if p.id == active_profile_id %}{{ p.name }}{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                Select a profile to start chatting
+                            {% endif %}
+                        </h2>
+                        <span id="groundingHeader"></span>
+                    </div>
+                    <p style="font-size:11px;color:var(--cream-faint);margin:4px 0 0;">AI simulation grounded in uploaded memories — not the real person.</p>
                 </div>
+                <select id="mobileProfileSelect" aria-label="Select memory companion" class="select-field chat-rail-select" style="display:none;width:auto;max-width:140px;padding:8px 12px;font-size:12px;flex-shrink:0;">
+                    <option value="">Choose...</option>
+                    {% for p in profiles %}
+                    <option value="{{ p.id }}" {% if active_profile_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
                 {% if active_profile_id %}
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <button onclick="toggleVoice()" id="voiceBtn" class="voice-btn" title="Toggle voice readout">
+                <div class="flex items-center" style="gap:8px;flex-shrink:0;">
+                    <button onclick="toggleVoice()" id="voiceBtn" class="icon-btn" title="Toggle voice readout" aria-label="Toggle voice readout" aria-pressed="false">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
                     </button>
                 </div>
@@ -65,30 +83,35 @@
                 {% if messages %}
                     {% for msg in messages %}
                     <div class="fade-in" style="display:flex;{% if msg.role == 'user' %}justify-content:flex-end;{% else %}justify-content:flex-start;{% endif %}">
-                        <div class="{% if msg.role == 'user' %}msg-user{% else %}msg-assistant{% endif %}">
-                            <div style="font-size:14px;line-height:1.6;" id="msg-{{ msg.id }}">
+                        <div class="{% if msg.role == 'user' %}msg-user{% else %}msg-assistant{% endif %}" {% if msg.role == 'assistant' and msg.sources %}data-sources="{{ msg.sources }}"{% endif %}>
+                            <div style="font-size:14px;line-height:1.65;" id="msg-{{ msg.id }}">
                                 {% if msg.role == 'assistant' %}
                                 <div class="prose" id="rendered-msg-{{ msg.id }}">{{ msg.content }}</div>
                                 {% else %}
                                 {{ msg.content }}
                                 {% endif %}
                             </div>
-                            <p style="font-size:11px;margin:6px 0 0;{% if msg.role == 'user' %}color:rgba(255,255,255,0.6);{% else %}color:var(--text-muted);{% endif %}">
-                                {{ msg.created_at.strftime('%H:%M') if msg.created_at else '' }}
-                            </p>
+                            <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                <p style="font-size:11px;margin:0;{% if msg.role == 'user' %}color:rgba(255,255,255,0.6);{% else %}color:var(--cream-faint);{% endif %}">
+                                    {{ msg.created_at.strftime('%H:%M') if msg.created_at else '' }}
+                                </p>
+                                {% if msg.role == 'assistant' %}
+                                <button class="sources-toggle" style="display:none;" onclick="toggleMsgSources(this)">View sources</button>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
                 {% else %}
                 <div style="flex:1;display:flex;align-items:center;justify-content:center;">
-                    <div style="text-align:center;">
+                    <div class="text-center">
                         <div class="empty-state-icon" style="width:72px;height:72px;margin:0 auto 20px;">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                         </div>
-                        <h3 style="font-size:18px;font-weight:700;color:var(--text-primary);margin:0 0 8px;">Start a Conversation</h3>
-                        <p style="color:var(--text-secondary);font-size:14px;margin:0;">
+                        <h3 style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--cream);margin:0 0 8px;">Start a Conversation</h3>
+                        <p class="dim" style="font-size:14px;margin:0;">
                             {% if active_profile_id %}
-                            Say something to get the conversation started.
+                            Ask {{ active_profile.name }} anything — their memories will ground the answers.
                             {% else %}
                             Select a memory profile to start chatting.
                             {% endif %}
@@ -99,24 +122,26 @@
             </div>
 
             {% if active_profile_id %}
-            <div style="background:var(--bg-secondary);border-top:1px solid var(--border-primary);padding:16px 24px;">
+            <div style="background:var(--ink-800);border-top:1px solid var(--border-primary);padding:16px 24px;">
                 <div style="display:flex;align-items:flex-end;gap:12px;max-width:800px;margin:0 auto;">
-                    <button onclick="startRecording()" id="micBtn" class="mic-btn" title="Record voice message">
+                    <button onclick="startRecording()" id="micBtn" class="icon-btn" title="Record voice message" aria-label="Record voice message" style="flex-shrink:0;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                     </button>
                     <div style="flex:1;position:relative;">
                         <textarea id="messageInput" rows="1" placeholder="Type a message..." class="input-field" style="resize:none;min-height:44px;max-height:120px;padding:12px 16px;border-radius:22px;" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"></textarea>
                     </div>
-                    <button onclick="sendMessage()" id="sendBtn" class="send-btn" title="Send message">
+                    <button onclick="sendMessage()" id="sendBtn" class="icon-btn" title="Send message" aria-label="Send message" style="flex-shrink:0;background:var(--gradient-primary);color:#fff;border:none;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     </button>
                 </div>
             </div>
             {% endif %}
         </div>
-    </div>
+    </main>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 const profileId = {{ active_profile_id|tojson if active_profile_id else 'null' }};
 const conversationId = {{ active_conversation.id|tojson if active_conversation else 'null' }};
@@ -124,6 +149,8 @@ let currentConversationId = conversationId;
 let isRecording = false;
 let voiceEnabled = false;
 let mediaRecorder = null;
+let pendingSources = null;
+let pendingGrounding = null;
 
 function renderMarkdown(text) {
     if (!text) return '';
@@ -136,7 +163,7 @@ function renderMarkdown(text) {
         .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
         .replace(/^### (.+)$/gm, '<h3>$1</h3>')
         .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-       .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
         .replace(/^- (.+)$/gm, '<li>$1</li>')
         .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
         .replace(/(<li>.*<\/li>\n?)+/g, (m) => '<ul>' + m + '</ul>')
@@ -149,14 +176,81 @@ document.getElementById('profileSelect').addEventListener('change', function() {
     if (this.value) window.location.href = '/chat/' + this.value;
 });
 
+const mobileProfileSelect = document.getElementById('mobileProfileSelect');
+if (mobileProfileSelect) {
+    mobileProfileSelect.addEventListener('change', function() {
+        if (this.value) window.location.href = '/chat/' + this.value;
+    });
+}
+
 function newConversation() {
     const sel = document.getElementById('profileSelect');
     if (sel.value) window.location.href = '/chat/' + sel.value;
-    else alert('Please select a profile first');
+    else toast('Please select a profile first', 'info');
 }
 
-function joinTokens(fullText, token) {
-    return fullText + token;
+function groundingLabel(grounding) {
+    if (!grounding) return { text: '', cls: '' };
+    if (grounding === 'preserved') return { text: 'Grounded in memories', cls: 'preserved' };
+    if (grounding === 'inference') return { text: 'Partly inferred', cls: 'inference' };
+    return { text: 'Not enough memories', cls: 'insufficient' };
+}
+
+function renderGroundingHeader(grounding) {
+    const el = document.getElementById('groundingHeader');
+    if (!el || !grounding) return;
+    const g = groundingLabel(grounding);
+    el.innerHTML = '<span class="grounding-pill ' + g.cls + '"><span class="dot"></span>' + g.text + '</span>';
+}
+
+function sourceItemsHTML(sources) {
+    if (!sources || !sources.length) return '';
+    return sources.map(s => {
+        const label = s.relevance_label || 'Related memory';
+        const type = s.source_type || 'Memory';
+        const date = s.memory_date ? ' &middot; ' + s.memory_date : '';
+        return '<div class="source-item">' +
+            '<div class="source-head"><p class="source-title">' + escapeHtml(s.title || 'Memory') + '</p>' +
+            '<span class="relevance-chip">' + label + '</span></div>' +
+            '<p class="source-meta">' + escapeHtml(type) + date + '</p>' +
+            (s.content ? '<p class="source-excerpt">&ldquo;' + escapeHtml(s.content.length > 240 ? s.content.slice(0, 240) + '…' : s.content) + '&rdquo;</p>' : '') +
+        '</div>';
+    }).join('');
+}
+
+function escapeHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function attachSourcesToggle(bubble, sources, grounding) {
+    if (!sources || !sources.length) return;
+    const row = document.createElement('div');
+    row.style.cssText = 'margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;';
+    const pill = document.createElement('span');
+    const g = groundingLabel(grounding);
+    pill.innerHTML = '<span class="grounding-pill ' + g.cls + '"><span class="dot"></span>' + g.text + '</span>';
+    const btn = document.createElement('button');
+    btn.className = 'sources-toggle';
+    btn.textContent = 'View sources (' + sources.length + ')';
+    btn.onclick = () => toggleMsgSources(btn);
+    row.appendChild(pill);
+    row.appendChild(btn);
+    bubble.appendChild(row);
+
+    const panel = document.createElement('div');
+    panel.className = 'source-panel';
+    panel.innerHTML = sourceItemsHTML(sources);
+    bubble.appendChild(panel);
+}
+
+function toggleMsgSources(btn) {
+    const bubble = btn.closest('.msg-assistant');
+    if (!bubble) return;
+    const panel = bubble.querySelector('.source-panel');
+    if (panel) {
+        const open = panel.classList.toggle('open');
+        btn.textContent = open ? 'Hide sources' : 'View sources';
+    }
 }
 
 async function sendMessage() {
@@ -166,10 +260,12 @@ async function sendMessage() {
 
     input.value = '';
     input.style.height = 'auto';
+    pendingSources = null;
+    pendingGrounding = null;
 
     appendMessage('user', content);
 
-    const assistantDiv = appendMessage('assistant', '<div style="display:flex;gap:4px;padding:8px 0;"><span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);display:inline-block;"></span><span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);display:inline-block;"></span><span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);display:inline-block;"></span></div>');
+    const assistantDiv = appendMessage('assistant', '<div style="display:flex;gap:4px;padding:8px 0;"><span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:var(--cream-faint);display:inline-block;"></span><span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:var(--cream-faint);display:inline-block;"></span><span class="typing-dot" style="width:6px;height:6px;border-radius:50%;background:var(--cream-faint);display:inline-block;"></span></div>');
     const assistantContent = assistantDiv.querySelector('.prose');
 
     document.getElementById('sendBtn').disabled = true;
@@ -185,6 +281,7 @@ async function sendMessage() {
         const decoder = new TextDecoder();
         let fullText = '';
         let buffer = '';
+        let streamed = false;
 
         while (true) {
             const { done, value } = await reader.read();
@@ -199,9 +296,14 @@ async function sendMessage() {
                         try {
                             const data = JSON.parse(line.slice(6));
                             if (data.error) {
-                                assistantContent.innerHTML = '<div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px 16px;color:var(--accent-red);font-size:13px;">' + data.error + '</div>';
-                            } else                             if (data.token) {
-                                fullText = joinTokens(fullText, data.token);
+                                assistantContent.innerHTML = '<div class="alert-error" style="margin:0;font-size:13px;">' + escapeHtml(data.error) + '</div>';
+                            } else if (data.meta) {
+                                pendingSources = data.meta.sources || null;
+                                pendingGrounding = data.meta.grounding || null;
+                                renderGroundingHeader(pendingGrounding);
+                            } else if (data.token) {
+                                streamed = true;
+                                fullText += data.token;
                                 let clean = fullText.replace(/<\|[^|]*\|>/g, '').replace(/User Safety:\s*\w+/gi, '').replace(/Response Safety:\s*\w+/gi, '').replace(/<<\|\/?\w+\|?>>/g, '').replace(/\[(?:SYSTEM|SAFETY|NOTE)\].*/gi, '').trim();
                                 clean = clean.replace(/([.!?,;:])([A-Za-z])/g, '$1 $2');
                                 assistantContent.innerHTML = renderMarkdown(clean);
@@ -209,6 +311,7 @@ async function sendMessage() {
                             if (data.done) {
                                 currentConversationId = data.conversation_id;
                                 if (voiceEnabled && fullText && !data.error) speak(fullText);
+                                attachSourcesToggle(assistantDiv, pendingSources, pendingGrounding);
                             }
                         } catch (e) {
                             console.error('SSE parse error:', e, line);
@@ -219,7 +322,7 @@ async function sendMessage() {
             scrollToBottom();
         }
     } catch (e) {
-        assistantContent.innerHTML = '<span style="color:var(--accent-red);">Error: ' + e.message + '</span>';
+        assistantContent.innerHTML = '<span style="color:var(--red);">Error: ' + escapeHtml(e.message) + '</span>';
     }
 
     document.getElementById('sendBtn').disabled = false;
@@ -235,13 +338,13 @@ function appendMessage(role, content) {
     const isAssistant = role === 'assistant';
     div.innerHTML = `
         <div class="${isAssistant ? 'msg-assistant' : 'msg-user'}">
-            <div style="font-size:14px;line-height:1.6;">
+            <div style="font-size:14px;line-height:1.65;">
                 ${isAssistant ? '<div class="prose">' + content + '</div>' : content}
             </div>
         </div>`;
     container.appendChild(div);
     scrollToBottom();
-    return div;
+    return div.querySelector('.msg-' + (isAssistant ? 'assistant' : 'user'));
 }
 
 function scrollToBottom() {
@@ -253,6 +356,8 @@ function toggleVoice() {
     voiceEnabled = !voiceEnabled;
     const btn = document.getElementById('voiceBtn');
     btn.classList.toggle('active', voiceEnabled);
+    btn.setAttribute('aria-pressed', voiceEnabled ? 'true' : 'false');
+    toast(voiceEnabled ? 'Voice readout on' : 'Voice readout off', 'info');
 }
 
 async function speak(text) {
@@ -265,7 +370,7 @@ async function speak(text) {
         if (!resp.ok) {
             const data = await resp.json().catch(() => null);
             console.error('TTS failed:', data && data.error);
-            alert('Voice failed: ' + ((data && data.error) || 'unknown error'));
+            toast('Voice failed: ' + ((data && data.error) || 'unknown error'), 'error');
             return;
         }
         const blob = await resp.blob();
@@ -274,7 +379,7 @@ async function speak(text) {
             await audio.play();
         } catch (playErr) {
             console.error('Playback blocked:', playErr);
-            alert('Browser blocked audio playback. Click the page, then try again.');
+            toast('Browser blocked audio playback. Click the page, then try again.', 'info');
         }
     } catch (e) {
         console.error('TTS error:', e);
@@ -311,7 +416,7 @@ async function startRecording() {
         isRecording = true;
         micBtn.classList.add('recording');
     } catch (e) {
-        alert('Microphone access denied');
+        toast('Microphone access denied', 'error');
     }
 }
 
@@ -319,6 +424,24 @@ scrollToBottom();
 
 document.querySelectorAll('[id^="rendered-msg-"]').forEach(el => {
     el.innerHTML = renderMarkdown(el.textContent);
+});
+
+document.querySelectorAll('.msg-assistant[data-sources]').forEach(bubble => {
+    try {
+        const data = JSON.parse(bubble.getAttribute('data-sources'));
+        const sources = data.sources || [];
+        if (sources.length) {
+            const btn = bubble.querySelector('.sources-toggle');
+            if (btn) {
+                btn.style.display = 'inline-block';
+                btn.textContent = 'View sources (' + sources.length + ')';
+            }
+            const panel = document.createElement('div');
+            panel.className = 'source-panel';
+            panel.innerHTML = sourceItemsHTML(sources);
+            bubble.appendChild(panel);
+        }
+    } catch (e) {}
 });
 </script>
 {% endblock %}

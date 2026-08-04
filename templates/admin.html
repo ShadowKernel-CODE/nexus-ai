@@ -1,70 +1,71 @@
 {% extends "base.html" %}
 {% block title %}Admin - MemoryBot{% endblock %}
 {% block body %}
-<div class="min-h-full flex">
+<div class="app-shell">
     {% include "partials/sidebar.html" %}
-    <div class="flex-1" style="margin-left:256px;padding:32px;">
+    <main class="main-content">
         <div style="max-width:1200px;margin:0 auto;">
-            <div class="slide-up" style="margin-bottom:32px;">
-                <h1 style="font-size:28px;font-weight:800;color:var(--text-primary);margin:0;">Admin Dashboard</h1>
-                <p style="margin-top:6px;color:var(--text-secondary);font-size:15px;">System overview and management</p>
+            <div class="slide-up" style="margin-bottom:28px;">
+                <p class="eyebrow">System</p>
+                <h1 class="page-title">Admin Dashboard</h1>
+                <p class="page-subtitle">Overview and management across all users.</p>
             </div>
 
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:32px;">
-                <div class="stat-card purple slide-up" style="text-align:center;">
-                    <p style="font-size:36px;font-weight:800;color:var(--accent-purple);margin:0;">{{ stats.total_users }}</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;text-transform:uppercase;letter-spacing:0.05em;">Users</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:28px;">
+                <div class="stat-card purple">
+                    <p class="stat-value">{{ stats.total_users }}</p>
+                    <p class="stat-label">Users</p>
                 </div>
-                <div class="stat-card pink slide-up" style="text-align:center;">
-                    <p style="font-size:36px;font-weight:800;color:var(--accent-pink);margin:0;">{{ stats.total_profiles }}</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;text-transform:uppercase;letter-spacing:0.05em;">Profiles</p>
+                <div class="stat-card pink">
+                    <p class="stat-value">{{ stats.total_profiles }}</p>
+                    <p class="stat-label">Profiles</p>
                 </div>
-                <div class="stat-card blue slide-up" style="text-align:center;">
-                    <p style="font-size:36px;font-weight:800;color:var(--accent-blue);margin:0;">{{ stats.total_files }}</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;text-transform:uppercase;letter-spacing:0.05em;">Files</p>
+                <div class="stat-card blue">
+                    <p class="stat-value">{{ stats.total_files }}</p>
+                    <p class="stat-label">Files</p>
                 </div>
-                <div class="stat-card green slide-up" style="text-align:center;">
-                    <p style="font-size:36px;font-weight:800;color:var(--accent-green);margin:0;">{{ stats.total_conversations }}</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;text-transform:uppercase;letter-spacing:0.05em;">Conversations</p>
+                <div class="stat-card green">
+                    <p class="stat-value">{{ stats.total_conversations }}</p>
+                    <p class="stat-label">Conversations</p>
                 </div>
-                <div class="stat-card amber slide-up" style="text-align:center;">
-                    <p style="font-size:36px;font-weight:800;color:var(--accent-amber);margin:0;">{{ stats.total_messages }}</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;text-transform:uppercase;letter-spacing:0.05em;">Messages</p>
+                <div class="stat-card amber">
+                    <p class="stat-value">{{ stats.total_messages }}</p>
+                    <p class="stat-label">Messages</p>
                 </div>
             </div>
 
-            <div style="margin-bottom:32px;display:flex;gap:12px;">
-                <a href="/admin/export" class="btn-primary" style="text-decoration:none;">
+            <div style="margin-bottom:28px;display:flex;gap:12px;flex-wrap:wrap;">
+                <a href="/admin/export" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Export Data (JSON)
                 </a>
-                <a href="/admin/logs" class="btn-secondary" style="text-decoration:none;">
+                <a href="/admin/logs" class="btn btn-secondary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>
                     View Logs
                 </a>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">
                 <div class="card" style="padding:0;overflow:hidden;">
                     <div style="padding:20px 24px;border-bottom:1px solid var(--border-primary);">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(139,92,246,0.15);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <div class="flex items-center" style="gap:10px;">
+                            <div class="file-icon default" style="width:32px;height:32px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             </div>
-                            <h2 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0;">Users</h2>
+                            <h2 class="section-title">Users</h2>
                         </div>
                     </div>
-                    <div style="padding:16px 24px;max-height:320px;overflow-y:auto;" class="chat-scroll">
+                    <div style="padding:12px 20px;max-height:320px;overflow-y:auto;" class="chat-scroll">
                         {% for u in users %}
-                        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;margin-bottom:4px;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background=''">
-                            <div style="display:flex;align-items:center;gap:12px;">
+                        <div class="flex items-center justify-between" style="padding:10px 8px;border-radius:10px;margin-bottom:2px;{% if not loop.last %}border-bottom:1px solid var(--border-primary);{% endif %}">
+                            <div class="flex items-center" style="gap:12px;">
                                 <div class="avatar avatar-sm avatar-purple">{{ u.name[0] }}</div>
                                 <div>
-                                    <p style="font-size:13px;font-weight:600;color:var(--text-primary);margin:0;">{{ u.name }}</p>
-                                    <p style="font-size:11px;color:var(--text-muted);margin:2px 0 0;">{{ u.email }}</p>
+                                    <p style="font-size:13px;font-weight:600;color:var(--cream);margin:0;">{{ u.name }}</p>
+                                    <p style="font-size:11px;color:var(--cream-faint);margin:2px 0 0;">{{ u.email }}</p>
                                 </div>
                             </div>
-                            <span style="font-size:11px;color:var(--text-muted);">{{ u.created_at.strftime('%b %d, %Y') if u.created_at else '' }}</span>
+                            <span style="font-size:11px;color:var(--cream-faint);">{{ u.created_at.strftime('%b %d, %Y') if u.created_at else '' }}</span>
                         </div>
                         {% endfor %}
                     </div>
@@ -72,24 +73,24 @@
 
                 <div class="card" style="padding:0;overflow:hidden;">
                     <div style="padding:20px 24px;border-bottom:1px solid var(--border-primary);">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(236,72,153,0.15);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-pink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <div class="flex items-center" style="gap:10px;">
+                            <div class="file-icon default" style="width:32px;height:32px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                             </div>
-                            <h2 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0;">Profiles</h2>
+                            <h2 class="section-title">Profiles</h2>
                         </div>
                     </div>
-                    <div style="padding:16px 24px;max-height:320px;overflow-y:auto;" class="chat-scroll">
+                    <div style="padding:12px 20px;max-height:320px;overflow-y:auto;" class="chat-scroll">
                         {% for p in profiles %}
-                        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;margin-bottom:4px;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background=''">
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <div class="avatar avatar-sm avatar-pink">{{ p.name[0] }}</div>
+                        <div class="flex items-center justify-between" style="padding:10px 8px;border-radius:10px;margin-bottom:2px;{% if not loop.last %}border-bottom:1px solid var(--border-primary);{% endif %}">
+                            <div class="flex items-center" style="gap:12px;">
+                                <div class="avatar avatar-sm avatar-rose">{{ p.name[0] }}</div>
                                 <div>
-                                    <p style="font-size:13px;font-weight:600;color:var(--text-primary);margin:0;">{{ p.name }}</p>
-                                    <p style="font-size:11px;color:var(--text-muted);margin:2px 0 0;">{{ p.relationship_type or 'No relationship specified' }}</p>
+                                    <p style="font-size:13px;font-weight:600;color:var(--cream);margin:0;">{{ p.name }}</p>
+                                    <p style="font-size:11px;color:var(--cream-faint);margin:2px 0 0;">{{ p.relationship_type or 'No relationship specified' }}</p>
                                 </div>
                             </div>
-                            <span style="font-size:11px;color:var(--text-muted);">{{ p.created_at.strftime('%b %d, %Y') if p.created_at else '' }}</span>
+                            <span style="font-size:11px;color:var(--cream-faint);">{{ p.created_at.strftime('%b %d, %Y') if p.created_at else '' }}</span>
                         </div>
                         {% endfor %}
                     </div>
@@ -98,34 +99,34 @@
 
             <div class="card" style="padding:0;overflow:hidden;">
                 <div style="padding:20px 24px;border-bottom:1px solid var(--border-primary);">
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(245,158,11,0.15);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <div class="flex items-center" style="gap:10px;">
+                        <div class="file-icon default" style="width:32px;height:32px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                         </div>
-                        <h2 style="font-size:15px;font-weight:700;color:var(--text-primary);margin:0;">Audit Log</h2>
+                        <h2 class="section-title">Audit Log</h2>
                     </div>
                 </div>
-                <div style="padding:0;">
+                <div>
                     {% if recent_logs %}
                     <div style="overflow-x:auto;">
-                        <table class="data-table">
+                        <table style="width:100%;border-collapse:collapse;font-size:13px;">
                             <thead>
-                                <tr>
-                                    <th style="padding:12px 20px;">Action</th>
-                                    <th style="padding:12px 20px;">Resource</th>
-                                    <th style="padding:12px 20px;">Details</th>
-                                    <th style="padding:12px 20px;">Time</th>
+                                <tr style="border-bottom:1px solid var(--border-primary);">
+                                    <th style="padding:12px 20px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--cream-faint);">Action</th>
+                                    <th style="padding:12px 20px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--cream-faint);">Resource</th>
+                                    <th style="padding:12px 20px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--cream-faint);">Details</th>
+                                    <th style="padding:12px 20px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--cream-faint);">Time</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for log in recent_logs %}
-                                <tr>
+                                <tr style="border-bottom:1px solid var(--border-primary);">
                                     <td style="padding:10px 20px;">
                                         <span class="badge {% if 'create' in log.action %}badge-green{% elif 'delete' in log.action %}badge-red{% elif 'upload' in log.action %}badge-blue{% else %}badge-purple{% endif %}" style="font-family:monospace;font-size:11px;">{{ log.action }}</span>
                                     </td>
-                                    <td style="padding:10px 20px;font-size:13px;color:var(--text-secondary);">{{ log.resource_type }} {{ log.resource_id[:8] if log.resource_id else '' }}</td>
-                                    <td style="padding:10px 20px;font-size:13px;color:var(--text-secondary);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ log.details }}</td>
-                                    <td style="padding:10px 20px;font-size:12px;color:var(--text-muted);">{{ log.created_at.strftime('%b %d %H:%M') if log.created_at else '' }}</td>
+                                    <td style="padding:10px 20px;color:var(--cream-dim);">{{ log.resource_type }} {{ log.resource_id[:8] if log.resource_id else '' }}</td>
+                                    <td style="padding:10px 20px;color:var(--cream-dim);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ log.details }}</td>
+                                    <td style="padding:10px 20px;font-size:12px;color:var(--cream-faint);">{{ log.created_at.strftime('%b %d %H:%M') if log.created_at else '' }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -133,12 +134,12 @@
                     </div>
                     {% else %}
                     <div class="empty-state" style="padding:32px;">
-                        <p style="color:var(--text-muted);font-size:14px;margin:0;">No audit logs yet</p>
+                        <p class="dim" style="font-size:14px;margin:0;">No audit logs yet</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 </div>
 {% endblock %}

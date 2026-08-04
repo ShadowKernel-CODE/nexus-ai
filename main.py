@@ -10,7 +10,6 @@ from database import init_db, SessionLocal, User
 app = FastAPI(title=settings.APP_NAME, description=settings.APP_DESCRIPTION)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 templates = Jinja2Templates(directory="templates")
 
@@ -37,6 +36,8 @@ async def startup():
     os.makedirs("static/js", exist_ok=True)
     os.makedirs("static/css", exist_ok=True)
     os.makedirs("templates", exist_ok=True)
+    from memory_processing import recover_stale_processing
+    recover_stale_processing()
     try:
         from seed import seed
         seed()
@@ -61,16 +62,45 @@ async def index(request: Request):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
     from auth import get_user_from_request
+    from database import MemoryProfile, Conversation, MemoryFile
+    from completeness import compute_completeness
     db = SessionLocal()
     try:
         user = get_user_from_request(request, db)
         if not user:
             return RedirectResponse(url="/auth/login", status_code=302)
 
-        from database import MemoryProfile, Conversation, MemoryFile
         profiles = db.query(MemoryProfile).filter(MemoryProfile.user_id == user.id).all()
         total_conversations = db.query(Conversation).filter(Conversation.user_id == user.id).count()
-        total_files = db.query(MemoryFile).join(MemoryProfile).filter(MemoryProfile.user_id == user.id).count()
+
+        profile_ids = [p.id for p in profiles]
+        files_by_profile = {}
+        companion_data = []
+        for p in profiles:
+            files = db.query(MemoryFile).filter(MemoryFile.profile_id == p.id).all()
+            files_by_profile[p.id] = files
+            recent = max((f.created_at for f in files), default=None)
+            companion_data.append({
+                "profile": p,
+                "file_count": len(files),
+                "recent_memory": recent,
+                "completeness": compute_completeness(p, files),
+            })
+
+        recent_files = (
+            db.query(MemoryFile)
+            .join(MemoryProfile, MemoryProfile.id == MemoryFile.profile_id)
+            .filter(MemoryProfile.user_id == user.id)
+            .order_by(MemoryFile.created_at.desc())
+            .limit(8)
+            .all()
+        )
+        file_profile_names = {}
+        for f in recent_files:
+            p = db.query(MemoryProfile).filter(MemoryProfile.id == f.profile_id).first()
+            if p:
+                file_profile_names[f.id] = p.name
+
         recent_conversations = db.query(Conversation).filter(
             Conversation.user_id == user.id
         ).order_by(Conversation.updated_at.desc()).limit(5).all()
@@ -83,8 +113,10 @@ async def dashboard(request: Request):
 
         return templates.TemplateResponse(request, "dashboard.html", {
             "request": request, "user": user, "profiles": profiles,
+            "companion_data": companion_data,
+            "recent_files": recent_files,
+            "file_profile_names": file_profile_names,
             "total_conversations": total_conversations,
-            "total_files": total_files,
             "recent_conversations": recent_conversations,
             "recent_conv_profiles": recent_conv_profiles,
         })
@@ -92,9 +124,15 @@ async def dashboard(request: Request):
         db.close()
 
 
-@app.exception_handler(302)
-async def redirect_handler(request: Request, exc):
-    return RedirectResponse(url=exc.headers.get("Location", "/"), status_code=302)
+@app.get("/about", response_class=HTMLResponse)
+async def about(request: Request):
+    from auth import get_user_from_request
+    db = SessionLocal()
+    try:
+        user = get_user_from_request(request, db)
+        return templates.TemplateResponse(request, "about.html", {"request": request, "user": user})
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

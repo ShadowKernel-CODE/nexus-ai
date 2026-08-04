@@ -32,6 +32,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     name = Column(String, nullable=False)
     password_hash = Column(String, nullable=False)
+    is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -77,6 +78,18 @@ class MemoryFile(Base):
     extracted_text = Column(Text, default="")
     text_chunks = Column(Text, default="[]")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    status = Column(String, default="uploading")  # uploading|extracting|transcribing|analyzing|indexing|ready|failed
+    memory_type = Column(String, default="")       # document|written|photograph|audio|video
+    caption = Column(Text, default="")             # user-provided context
+    memory_date = Column(String, default="")       # known date, e.g. 1998-07-12 ("" = unknown)
+    transcript = Column(Text, default="")          # audio/video transcript
+    vision_description = Column(Text, default="")  # image description from vision model
+    word_count = Column(Integer, default=0)
+    chunk_count = Column(Integer, default=0)
+    error_message = Column(Text, default="")
+    processing_details = Column(Text, default="{}")
+    is_processed = Column(Boolean, default=False)
 
     profile = relationship("MemoryProfile", back_populates="files")
     embeddings = relationship("MemoryEmbedding", back_populates="file", cascade="all, delete-orphan")
@@ -145,9 +158,33 @@ def migrate():
     try:
         with engine.connect() as conn:
             inspector = inspect(engine)
-            columns = [c["name"] for c in inspector.get_columns("memory_profiles")]
-            if "voice_id" not in columns:
+            profile_columns = [c["name"] for c in inspector.get_columns("memory_profiles")]
+            if "voice_id" not in profile_columns:
                 conn.execute(text("ALTER TABLE memory_profiles ADD COLUMN voice_id VARCHAR DEFAULT ''"))
                 conn.commit()
+
+            user_columns = [c["name"] for c in inspector.get_columns("users")]
+            if "is_admin" not in user_columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0"))
+                conn.commit()
+
+            file_columns = [c["name"] for c in inspector.get_columns("memory_files")]
+            file_additions = {
+                "status": "VARCHAR DEFAULT 'ready'",
+                "memory_type": "VARCHAR DEFAULT ''",
+                "caption": "TEXT DEFAULT ''",
+                "memory_date": "VARCHAR DEFAULT ''",
+                "transcript": "TEXT DEFAULT ''",
+                "vision_description": "TEXT DEFAULT ''",
+                "word_count": "INTEGER DEFAULT 0",
+                "chunk_count": "INTEGER DEFAULT 0",
+                "error_message": "TEXT DEFAULT ''",
+                "processing_details": "TEXT DEFAULT '{}'",
+                "is_processed": "BOOLEAN DEFAULT 0",
+            }
+            for col, coldef in file_additions.items():
+                if col not in file_columns:
+                    conn.execute(text(f"ALTER TABLE memory_files ADD COLUMN {col} {coldef}"))
+                    conn.commit()
     except Exception as e:
         print(f"Migration warning: {e}")

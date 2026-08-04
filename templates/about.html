@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}About - MemoryBot{% endblock %}
+{% block body %}
+<div class="app-shell">
+    {% include "partials/sidebar.html" %}
+    <main class="main-content">
+        <div style="max-width:820px;margin:0 auto;">
+            <div class="slide-up" style="margin-bottom:36px;">
+                <p class="eyebrow">About MemoryBot</p>
+                <h1 class="page-title">An AI memory companion that speaks with care.</h1>
+                <p class="page-subtitle">MemoryBot turns the memories you preserve — letters, photographs, recordings, stories — into a gentle conversational companion grounded in what really happened.</p>
+            </div>
+
+            <div class="card card-gradient slide-up" style="margin-bottom:24px;">
+                <h2 class="section-title" style="margin-bottom:12px;">How it works</h2>
+                <div style="display:flex;flex-direction:column;gap:16px;margin-top:16px;">
+                    <div class="flex items-start" style="gap:14px;">
+                        <div class="file-icon default" style="width:38px;height:38px;">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        </div>
+                        <div>
+                            <p style="font-size:15px;font-weight:600;color:var(--cream);margin:0;">Preserve</p>
+                            <p class="dim" style="font-size:13px;line-height:1.6;margin:4px 0 0;">Upload letters, journals, photos, audio, or video. Each memory is transcribed, described, and indexed so nothing gets lost.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start" style="gap:14px;">
+                        <div class="file-icon default" style="width:38px;height:38px;">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </div>
+                        <div>
+                            <p style="font-size:15px;font-weight:600;color:var(--cream);margin:0;">Shape a companion</p>
+                            <p class="dim" style="font-size:13px;line-height:1.6;margin:4px 0 0;">A profile captures who they were — personality, values, favorite phrases, how they spoke and wrote.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start" style="gap:14px;">
+                        <div class="file-icon default" style="width:38px;height:38px;">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        </div>
+                        <div>
+                            <p style="font-size:15px;font-weight:600;color:var(--cream);margin:0;">Converse</p>
+                            <p class="dim" style="font-size:13px;line-height:1.6;margin:4px 0 0;">Ask anything. Every answer is grounded in your uploaded memories, with the sources shown transparently.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card slide-up" style="margin-bottom:24px;">
+                <h2 class="section-title" style="margin-bottom:12px;">Memory integrity</h2>
+                <p class="dim" style="font-size:14px;line-height:1.7;margin:0 0 16px;">MemoryBot is honest about what it knows. Every response is labeled:</p>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div class="flex items-center" style="gap:12px;">
+                        <span class="grounding-pill preserved"><span class="dot"></span>Grounded in memories</span>
+                        <span class="dim" style="font-size:13px;">Directly drawn from what you uploaded.</span>
+                    </div>
+                    <div class="flex items-center" style="gap:12px;">
+                        <span class="grounding-pill inference"><span class="dot"></span>Partly inferred</span>
+                        <span class="dim" style="font-size:13px;">Extrapolated gently from personality and context.</span>
+                    </div>
+                    <div class="flex items-center" style="gap:12px;">
+                        <span class="grounding-pill insufficient"><span class="dot"></span>Not enough memories</span>
+                        <span class="dim" style="font-size:13px;">Honestly tells you it doesn't know.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card slide-up" style="margin-bottom:24px;">
+                <h2 class="section-title" style="margin-bottom:12px;">A gentle reminder</h2>
+                <div class="alert-warning" style="font-size:13px;line-height:1.7;">
+                    MemoryBot is an <strong>AI simulation</strong>. The voice is not the person, and the responses are not theirs. We hope the companion brings comfort and remembrance — never replaces the person you loved. Grief support is human, and so are you.
+                </div>
+            </div>
+
+            <div class="card slide-up">
+                <h2 class="section-title" style="margin-bottom:12px;">Privacy</h2>
+                <p class="dim" style="font-size:14px;line-height:1.7;margin:0;">Your memories belong to you. Accounts, profiles, and uploads are private to your sign-in, and deletion is permanent. This is a prototype for a hackathon — treat it as a place to explore, not to store sensitive records you can't afford to lose.</p>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

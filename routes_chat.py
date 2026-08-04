@@ -5,9 +5,27 @@ from sqlalchemy.orm import Session
 
 from database import get_db, User, MemoryProfile, Conversation, Message
 from auth import get_user_from_request
-from rag import stream_rag_response, search_similar_memories, build_profile_context
+from rag import stream_rag_response, search_similar_memories, build_profile_context, grounding_state
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+def _sources_for_message(memories, profile_name=None):
+    sources = []
+    for m in memories:
+        sources.append({
+            "file_id": m.get("file_id"),
+            "title": m.get("title", "Memory"),
+            "source_type": m.get("source_type", "Memory"),
+            "memory_type": m.get("memory_type", ""),
+            "content": m.get("content", ""),
+            "score": round(m.get("score", 0.0), 3),
+            "relevance_label": m.get("relevance_label", "Related memory"),
+            "memory_date": m.get("memory_date", ""),
+            "status": m.get("status", "ready"),
+            "profile_id": m.get("profile_id"),
+        })
+    return sources
 
 
 @router.get("", response_class=HTMLResponse)
@@ -28,7 +46,7 @@ async def chat_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "chat.html", {
         "request": request, "user": user, "profiles": profiles,
         "conversations": conversations, "active_profile_id": None,
-        "active_conversation": None,
+        "active_conversation": None, "active_profile": None,
     })
 
 
@@ -52,7 +70,7 @@ async def chat_profile(request: Request, profile_id: str, db: Session = Depends(
     return templates.TemplateResponse(request, "chat.html", {
         "request": request, "user": user, "profiles": profiles,
         "conversations": conversations, "active_profile_id": profile_id,
-        "active_conversation": None,
+        "active_conversation": None, "active_profile": profile,
     })
 
 
@@ -72,6 +90,8 @@ async def chat_conversation(request: Request, profile_id: str, conversation_id: 
     profile = db.query(MemoryProfile).filter(
         MemoryProfile.id == profile_id, MemoryProfile.user_id == user.id
     ).first()
+    if not profile:
+        return RedirectResponse(url="/chat", status_code=302)
     profiles = db.query(MemoryProfile).filter(MemoryProfile.user_id == user.id).all()
     conversations = db.query(Conversation).filter(
         Conversation.user_id == user.id,
@@ -82,6 +102,7 @@ async def chat_conversation(request: Request, profile_id: str, conversation_id: 
         "request": request, "user": user, "profiles": profiles,
         "conversations": conversations, "active_profile_id": profile_id,
         "active_conversation": conversation, "messages": messages,
+        "active_profile": profile,
     })
 
 
@@ -130,6 +151,9 @@ async def send_message(request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     memories = search_similar_memories(db, profile_id, content, limit=10)
+    sources = _sources_for_message(memories)
+    best_score = max((m.get("score", 0.0) for m in memories), default=0.0)
+    grounding = grounding_state(best_score, bool(memories))
 
     conv_messages = db.query(Message).filter(
         Message.conversation_id == conversation_id
@@ -139,25 +163,24 @@ async def send_message(request: Request, db: Session = Depends(get_db)):
     saved_profile_id = profile_id
     saved_conversation_id = conversation_id
     saved_memories = memories
+    saved_sources = sources
+    saved_grounding = grounding
     profile_context = build_profile_context(profile)
 
     def event_stream():
         db = SessionLocal()
         try:
             full_response = ""
-            is_error = False
+            yield f"data: {json.dumps({'meta': {'conversation_id': saved_conversation_id, 'sources': saved_sources, 'grounding': saved_grounding}})}\n\n"
             try:
                 for token in stream_rag_response(content, profile_context, saved_memories, history):
                     full_response += token
                     if token.startswith("[ERROR]"):
-                        is_error = True
                         yield f"data: {json.dumps({'error': token[8:].strip(), 'done': True, 'conversation_id': saved_conversation_id})}\n\n"
                         return
                     yield f"data: {json.dumps({'token': token})}\n\n"
-            except Exception as e:
-                full_response = f"Error generating response: {str(e)}"
-                is_error = True
-                yield f"data: {json.dumps({'error': full_response, 'done': True, 'conversation_id': saved_conversation_id})}\n\n"
+            except Exception:
+                yield f"data: {json.dumps({'error': 'Something went wrong while generating a response. Please try again.', 'done': True, 'conversation_id': saved_conversation_id})}\n\n"
                 return
 
             if not full_response.strip():
@@ -168,12 +191,12 @@ async def send_message(request: Request, db: Session = Depends(get_db)):
                 conversation_id=saved_conversation_id,
                 role="assistant",
                 content=full_response,
-                sources=json.dumps([m["content"][:200] for m in saved_memories[:3]]),
+                sources=json.dumps({"sources": saved_sources, "grounding": saved_grounding}),
             )
             db.add(assistant_msg)
             db.commit()
 
-            yield f"data: {json.dumps({'done': True, 'conversation_id': saved_conversation_id})}\n\n"
+            yield f"data: {json.dumps({'done': True, 'conversation_id': saved_conversation_id, 'sources': saved_sources, 'grounding': saved_grounding})}\n\n"
         finally:
             db.close()
 

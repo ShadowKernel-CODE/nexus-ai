@@ -1,69 +1,77 @@
 {% extends "base.html" %}
 {% block title %}Timeline - {{ profile.name }} - MemoryBot{% endblock %}
 {% block body %}
-<div class="min-h-full flex">
+<div class="app-shell">
     {% include "partials/sidebar.html" %}
-    <div class="flex-1" style="margin-left:256px;padding:32px;">
-        <div style="max-width:800px;margin:0 auto;">
-            <a href="/profiles/{{ profile.id }}" style="display:inline-flex;align-items:center;gap:6px;color:var(--accent-purple);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:20px;">
+    <main class="main-content">
+        <div style="max-width:820px;margin:0 auto;">
+            <a href="/profiles/{{ profile.id }}" class="no-underline" style="display:inline-flex;align-items:center;gap:6px;color:var(--violet-soft);font-size:13px;font-weight:600;margin-bottom:20px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>
                 Back to {{ profile.name }}
             </a>
 
             <div class="slide-up" style="margin-bottom:32px;">
-                <h1 style="font-size:28px;font-weight:800;color:var(--text-primary);margin:0;">Memory Timeline</h1>
-                <p style="margin-top:6px;color:var(--text-secondary);font-size:15px;">Chronological view of memories for {{ profile.name }}</p>
+                <p class="eyebrow">Life story</p>
+                <h1 class="page-title">Memory Timeline</h1>
+                <p class="page-subtitle">A chronological view of {{ profile.name }}'s preserved memories.</p>
             </div>
 
-            {% if monthly %}
-            <div style="position:relative;padding-left:32px;">
-                <div style="position:absolute;left:12px;top:0;bottom:0;width:2px;background:var(--border-primary);"></div>
-
-                {% for month, items in monthly.items() %}
-                <div class="slide-up" style="margin-bottom:32px;">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;position:relative;">
-                        <div style="width:24px;height:24px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;position:relative;left:-20px;z-index:1;">
-                            <div style="width:8px;height:8px;border-radius:50%;background:white;"></div>
-                        </div>
-                        <h2 style="font-size:18px;font-weight:700;color:var(--text-primary);margin:0;">{{ month }}</h2>
+            {% set ns = namespace(last_year='') %}
+            {% if timeline_items %}
+            <div class="timeline-rail">
+                {% for item in timeline_items %}
+                {% if item.year != ns.last_year %}
+                    {% set ns.last_year = item.year %}
+                    <div class="timeline-item {% if loop.index % 2 == 0 %}amber{% endif %}" style="margin-bottom:12px;">
+                        <div class="timeline-dot"></div>
+                        <h2 class="timeline-year">{{ item.year or 'Unknown' }}</h2>
                     </div>
-
-                    <div style="display:flex;flex-direction:column;gap:12px;">
-                        {% for item in items %}
-                        <div class="card" style="padding:16px;margin-left:4px;">
-                            <div style="display:flex;align-items:flex-start;gap:12px;">
-                                <div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;{% if item.type == 'file' %}background:rgba(59,130,246,0.15);{% else %}background:rgba(139,92,246,0.15);{% endif %}">
-                                    {% if item.type == 'file' %}
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{% if item.type == 'file' %}#3b82f6{% else %}#8b5cf6{% endif %}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>
-                                    {% else %}
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                                    {% endif %}
-                                </div>
-                                <div style="flex:1;">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;">
-                                        <h3 style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0;">{{ item.title }}</h3>
-                                        <span class="badge {% if item.type == 'file' %}badge-blue{% else %}badge-purple{% endif %}" style="font-size:11px;">{{ item.type }}</span>
-                                    </div>
-                                    <p style="font-size:13px;color:var(--text-secondary);margin:4px 0 0;">{{ item.detail }}</p>
-                                    <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">{{ item.date.strftime('%b %d, %Y at %H:%M') if item.date else '' }}</p>
-                                </div>
-                            </div>
+                {% endif %}
+                <div class="timeline-item fade-in" style="margin-left:6px;">
+                    <div class="timeline-dot {% if loop.index % 2 == 0 %}amber{% endif %}" style="position:static;margin-left:0;display:inline-block;vertical-align:top;margin-top:6px;"></div>
+                    <div class="card card-hover" style="padding:16px;margin-left:20px;">
+                        <div class="flex items-center justify-between">
+                            <h3 style="font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--cream);margin:0;">{{ item.title }}</h3>
+                            <span class="badge {% if item.label in ('Photograph',) %}badge-amber{% elif item.label in ('Audio Recording', 'Video') %}badge-rose{% elif item.label == 'Document' %}badge-green{% else %}badge-purple{% endif %}" style="font-size:11px;">{{ item.label }}</span>
                         </div>
-                        {% endfor %}
+                        <p style="font-size:12px;color:var(--cream-faint);margin:6px 0 0;">
+                            {% if item.date %}{{ item.date }}{% endif %}
+                            <a href="/profiles/{{ profile.id }}" class="no-underline" style="color:#b9ccf5;margin-left:8px;">View memory</a>
+                        </p>
                     </div>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
-            <div class="card" style="padding:64px 32px;text-align:center;">
-                <div class="empty-state-icon" style="margin:0 auto 16px;">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div class="card empty-state slide-up">
+                <div class="empty-state-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </div>
-                <h3 style="font-size:18px;font-weight:700;color:var(--text-primary);margin:0 0 8px;">No Timeline Yet</h3>
-                <p style="color:var(--text-secondary);font-size:14px;margin:0;">Upload files or start conversations to build a timeline of memories.</p>
+                <h3 style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--cream);margin:0 0 8px;">No Timeline Yet</h3>
+                <p class="dim" style="font-size:14px;margin:0 0 16px;">Upload dated memories to build a timeline of {{ profile.name }}'s life.</p>
+                <a href="/profiles/{{ profile.id }}" class="btn btn-primary btn-sm">Upload memories</a>
+            </div>
+            {% endif %}
+
+            {% if undated %}
+            <div class="slide-up" style="margin-top:40px;">
+                <h2 class="section-title" style="margin-bottom:16px;">Undated Memories</h2>
+                <div class="card" style="padding:0;overflow:hidden;">
+                    <div style="display:flex;flex-direction:column;">
+                        {% for item in undated %}
+                        <div style="padding:16px 20px;{% if not loop.last %}border-bottom:1px solid var(--border-primary);{% endif %}">
+                            <div class="flex items-center justify-between">
+                                <p style="font-size:14px;font-weight:600;color:var(--cream);margin:0;">{{ item.title }}</p>
+                                <span class="badge badge-cream" style="font-size:11px;">{{ item.label }}</span>
+                            </div>
+                            <a href="/profiles/{{ profile.id }}" class="no-underline" style="font-size:12px;color:#b9ccf5;">Add a date &rarr;</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
             {% endif %}
         </div>
-    </div>
+    </main>
 </div>
 {% endblock %}

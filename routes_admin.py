@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from database import get_db, User, MemoryProfile, MemoryFile, Conversation, Message, AuditLog
-from auth import get_user_from_request
+from database import get_db, User, MemoryProfile, MemoryFile, MemoryEmbedding, Conversation, Message, AuditLog
+from auth import require_admin
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -13,8 +13,9 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def admin_page(request: Request, db: Session = Depends(get_db)):
     from fastapi.templating import Jinja2Templates
     templates = Jinja2Templates(directory="templates")
-    user = get_user_from_request(request, db)
-    if not user:
+    try:
+        user = require_admin(request, db)
+    except Exception:
         return RedirectResponse(url="/auth/login", status_code=302)
 
     stats = {
@@ -37,9 +38,11 @@ async def admin_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/api/stats")
 async def admin_stats(request: Request, db: Session = Depends(get_db)):
-    user = get_user_from_request(request, db)
-    if not user:
-        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    try:
+        require_admin(request, db)
+    except Exception as e:
+        status = 401 if isinstance(e, HTTPException) and e.status_code == 401 else 403
+        return JSONResponse({"error": "Unauthorized"}, status_code=status)
 
     return JSONResponse({
         "total_users": db.query(User).count(),
@@ -53,12 +56,14 @@ async def admin_stats(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/export")
 async def export_data(request: Request, db: Session = Depends(get_db)):
-    user = get_user_from_request(request, db)
-    if not user:
-        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    try:
+        user = require_admin(request, db)
+    except Exception as e:
+        status = 401 if isinstance(e, HTTPException) and e.status_code == 401 else 403
+        return JSONResponse({"error": "Unauthorized"}, status_code=status)
 
     from database import MemoryEmbedding
-    profiles = db.query(MemoryProfile).filter(MemoryProfile.user_id == user.id).all()
+    profiles = db.query(MemoryProfile).all()
     export = []
     for p in profiles:
         files = db.query(MemoryFile).filter(MemoryFile.profile_id == p.id).all()
@@ -90,8 +95,9 @@ async def export_data(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/logs")
 async def admin_logs(request: Request, db: Session = Depends(get_db)):
-    user = get_user_from_request(request, db)
-    if not user:
+    try:
+        require_admin(request, db)
+    except Exception:
         return RedirectResponse(url="/auth/login", status_code=302)
     logs = db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(200).all()
     return JSONResponse([{

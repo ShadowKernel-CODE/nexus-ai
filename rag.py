@@ -1,19 +1,49 @@
 import json
 import math
 import os
+import base64
+import re
 from typing import List, Dict, Tuple, Optional
 from openai import OpenAI
 
 from config import settings
 
-import re
-
-client = None
+_client = None
 if settings.OPENAI_API_KEY:
-    client = OpenAI(
+    _client = OpenAI(
         api_key=settings.OPENAI_API_KEY,
         base_url=settings.OPENAI_BASE_URL,
     )
+
+
+def get_client() -> Optional[OpenAI]:
+    return _client
+
+
+# --- relevance scoring -------------------------------------------------------
+
+HIGH_RELEVANCE_THRESHOLD = 0.45
+RELEVANT_THRESHOLD = 0.32
+RELATED_THRESHOLD = 0.25
+
+
+def relevance_label(score: float) -> str:
+    if score >= HIGH_RELEVANCE_THRESHOLD:
+        return "High relevance"
+    if score >= RELEVANT_THRESHOLD:
+        return "Relevant"
+    if score >= RELATED_THRESHOLD:
+        return "Related memory"
+    return "Low relevance"
+
+
+def grounding_state(best_score: float, has_memories: bool) -> str:
+    """Classify answer grounding: Preserved Memory / Memory + Inference / Insufficient Memory."""
+    if not has_memories or best_score < RELATED_THRESHOLD:
+        return "insufficient"
+    if best_score >= HIGH_RELEVANCE_THRESHOLD:
+        return "preserved"
+    return "inference"
 
 
 def clean_token(token: str) -> str:
@@ -29,10 +59,10 @@ def clean_token(token: str) -> str:
 
 
 def generate_embedding(text: str) -> Optional[List[float]]:
-    if not client:
+    if not _client:
         return None
     try:
-        response = client.embeddings.create(
+        response = _client.embeddings.create(
             model=settings.EMBEDDING_MODEL,
             input=text[:8000],
         )
@@ -54,19 +84,55 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
+STOPWORDS = {
+    "the", "a", "an", "and", "or", "of", "to", "in", "on", "at", "for", "with",
+    "what", "why", "how", "did", "was", "were", "is", "are", "do", "does", "you",
+    "your", "my", "me", "i", "we", "us", "it", "about", "tell", "been", "have",
+    "has", "had", "would", "could", "should", "can", "not", "so", "then", "that",
+}
+
+
 def keyword_similarity(query: str, text: str) -> float:
-    query_words = set(query.lower().split())
+    query_words = [w for w in query.lower().split() if len(w) > 2 and w not in STOPWORDS]
     text_words = set(text.lower().split())
     if not query_words:
         return 0.0
-    intersection = query_words & text_words
-    return len(intersection) / len(query_words)
+    matched = 0.0
+    for w in query_words:
+        if w in text_words:
+            matched += 1.0
+        elif any(t.startswith(w) or w in t for t in text_words):
+            matched += 0.5
+    return matched / len(query_words)
+
+
+def source_type_label(memory_type: str, file_type: str) -> str:
+    if memory_type == "photograph":
+        return "Photograph"
+    if memory_type == "audio":
+        return "Audio Recording"
+    if memory_type == "video":
+        return "Video"
+    if memory_type == "written":
+        return "Written Memory"
+    if memory_type == "document":
+        return "Document"
+    if file_type in (".pdf", ".docx", ".txt"):
+        return "Document"
+    return "Memory"
+
+
+def title_from_filename(original_name: str) -> str:
+    name = os.path.splitext(original_name or "")[0]
+    name = re.sub(r"sample_", "", name)
+    name = name.replace("_", " ").replace("-", " ").strip()
+    return " ".join(w.capitalize() for w in name.split())[:80] or "Memory"
 
 
 def search_similar_memories(
-    db, profile_id: str, query: str, limit: int = 10
+    db, profile_id: str, query: str, limit: int = 10, min_score: float = RELATED_THRESHOLD
 ) -> List[Dict]:
-    from database import MemoryEmbedding
+    from database import MemoryEmbedding, MemoryFile
 
     embeddings = (
         db.query(MemoryEmbedding)
@@ -81,27 +147,138 @@ def search_similar_memories(
 
     scored = []
     for emb in embeddings:
+        keyword = keyword_similarity(query, emb.content)
         if query_embedding:
             try:
                 stored = json.loads(emb.embedding) if emb.embedding and emb.embedding != "[]" else []
                 if stored:
-                    score = cosine_similarity(query_embedding, stored)
+                    cosine = cosine_similarity(query_embedding, stored)
                 else:
-                    score = keyword_similarity(query, emb.content)
+                    cosine = 0.0
             except (json.JSONDecodeError, TypeError):
-                score = keyword_similarity(query, emb.content)
+                cosine = 0.0
+            score = max(cosine, keyword * 0.8)
         else:
-            score = keyword_similarity(query, emb.content)
+            score = keyword
 
         scored.append({
+            "embedding_id": emb.id,
+            "file_id": emb.file_id,
             "content": emb.content,
             "score": score,
             "chunk_index": emb.chunk_index,
         })
 
     scored.sort(key=lambda x: x["score"], reverse=True)
-    return scored[:limit]
 
+    # Keep only the single best chunk per file (dedup by source).
+    seen_files = set()
+    deduped = []
+    for item in scored:
+        fid = item.get("file_id")
+        if fid and fid in seen_files:
+            continue
+        if fid:
+            seen_files.add(fid)
+        deduped.append(item)
+
+    # Enrich with source metadata.
+    file_cache = {}
+    if deduped:
+        file_ids = {d["file_id"] for d in deduped if d.get("file_id")}
+        if file_ids:
+            for f in db.query(MemoryFile).filter(MemoryFile.id.in_(file_ids)).all():
+                file_cache[f.id] = f
+
+    results = []
+    for item in deduped:
+        f = file_cache.get(item["file_id"])
+        memory_type = getattr(f, "memory_type", "") if f else ""
+        original_name = getattr(f, "original_name", "") if f else ""
+        results.append({
+            "content": item["content"],
+            "score": item["score"],
+            "relevance_label": relevance_label(item["score"]),
+            "chunk_index": item["chunk_index"],
+            "file_id": item["file_id"],
+            "title": title_from_filename(original_name) if original_name else (item["content"][:60]),
+            "source_type": source_type_label(memory_type, getattr(f, "file_type", "") if f else ""),
+            "memory_type": memory_type,
+            "memory_date": getattr(f, "memory_date", "") if f else "",
+            "status": getattr(f, "status", "ready") if f else "ready",
+            "profile_id": profile_id,
+        })
+
+    # Relevance filtering: do not inject irrelevant memories just to pad results.
+    results = [r for r in results if r["score"] >= min_score]
+    return results[:limit]
+
+
+# --- multimodal helpers ------------------------------------------------------
+
+def transcribe_audio_file(file_path: str) -> str:
+    """Transcribe an audio file to text using the configured STT (whisper-compatible)."""
+    if not _client:
+        raise RuntimeError("Transcription requires OPENAI_API_KEY to be configured")
+    with open(file_path, "rb") as f:
+        result = _client.audio.transcriptions.create(model="whisper-1", file=f)
+    return (result.text or "").strip()
+
+
+def describe_image_file(file_path: str, ext: str, caption: str = "", context: str = "") -> str:
+    """Generate a factual description of an image using a vision-capable model."""
+    if not _client:
+        raise RuntimeError("Image analysis requires OPENAI_API_KEY to be configured")
+    try:
+        with open(file_path, "rb") as f:
+            img_bytes = f.read()
+    except OSError:
+        return ""
+
+    mime_map = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif"}
+    mime = mime_map.get(ext.lower(), "image/jpeg")
+    b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+    prompt = (
+        "Describe this photograph factually and in detail. Focus on visible, objective details: "
+        "people's general appearance and actions, setting, objects, clothing, time period cues, mood. "
+        "Do NOT guess names, identities, or relationships that are not visible or provided. "
+        "Do not speculate about unverifiable events."
+    )
+    if caption:
+        prompt += f"\n\nThe uploader provided this context: \"{caption}\" — you may incorporate it as fact."
+    if context:
+        prompt += f"\n\nMemory profile: {context}"
+
+    response = _client.chat.completions.create(
+        model=settings.VISION_MODEL,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
+            ],
+        }],
+        max_tokens=300,
+    )
+    text = response.choices[0].message.content or ""
+    return text.strip()
+
+
+def extract_audio_from_video(file_path: str, out_path: str) -> None:
+    """Extract audio track from a video file using ffmpeg."""
+    import subprocess
+    cmd = [
+        "ffmpeg", "-y", "-i", file_path,
+        "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+        out_path,
+    ]
+    result = subprocess.run(cmd, capture_output=True, timeout=300)
+    if result.returncode != 0 or not os.path.exists(out_path):
+        raise RuntimeError("Audio extraction from video failed")
+
+
+# --- profile context ---------------------------------------------------------
 
 def build_profile_context(profile, files=None) -> str:
     context_parts = []
@@ -112,8 +289,6 @@ def build_profile_context(profile, files=None) -> str:
         context_parts.append(f"Relationship: {profile.relationship_type}")
     if profile.date_of_birth:
         context_parts.append(f"Date of Birth: {profile.date_of_birth}")
-    if profile.date_of_death:
-        context_parts.append(f"Date of Death: {profile.date_of_death}")
     if hasattr(profile, 'personality_traits') and profile.personality_traits:
         context_parts.append(f"Personality Traits: {', '.join(profile.personality_traits)}")
     if hasattr(profile, 'favorite_phrases') and profile.favorite_phrases:
@@ -130,64 +305,77 @@ def build_profile_context(profile, files=None) -> str:
 
 
 def generate_fallback_response(query: str, context: str, memories: List[Dict]) -> str:
+    """Offline, source-grounded response used when the LLM API is unavailable.
+
+    It only speaks from retrieved memories and never invents personal history.
+    """
     query_lower = query.lower()
-    name = context.split(chr(10))[0].replace("Name: ", "") if context else "there"
+    name = context.splitlines()[0].replace("Name: ", "") if context else "them"
+    relevant = memories[0]["content"] if memories else None
+    secondary = memories[1]["content"] if len(memories) > 1 else None
 
-    if any(g in query_lower for g in ["hello", "hi", "hey", "greetings"]):
-        return f"Hey there! It's so good to hear from you. What's on your mind today?"
+    if any(g in query_lower for g in ["hello", "hi", "hey", "greetings", "how are you"]):
+        return (
+            f"Hello there — it's good to hear from you. I'm the AI memory companion for {name}, "
+            f"built from the memories that have been preserved. What would you like to talk about?"
+        )
 
-    if any(w in query_lower for w in ["who", "tell me about", "what was"]):
-        relevant = memories[0]["content"] if memories else None
-        if relevant:
-            return f"Oh, you want to know about that? Let me think... {relevant}\n\nWant to hear more about it?"
-        return f"Hmm, that's a good question. What I can tell you is... {context}\n\nBut honestly, there's so much more to it than what's written down here. What specifically are you curious about?"
+    if relevant:
+        reply = (
+            f"I can tell you what's preserved about that. In the memories I have: {relevant[:600]}"
+        )
+        if secondary:
+            reply += f"\n\nAnd there's this too: {secondary[:300]}"
+        return reply
 
-    if any(w in query_lower for w in ["memory", "remember", "recall", "story", "stories"]):
-        if memories:
-            texts = [m["content"][:200] for m in memories[:3]]
-            return "Oh yes! I remember that! " + " ".join(texts[:1]) + "\n\nThat one always makes me smile. Want to hear another one?"
-        return "Hmm, I'm trying to think... my mind's a bit fuzzy on that one. Maybe if you tell me more about what you're thinking of, it might jog my memory!"
-
-    if memories:
-        return f"Oh, that reminds me of something... {memories[0]['content'][:500]}\n\nBut hey, what about you? Tell me what's going on with you!"
-
-    return f"Hey, I'm here! It's always nice to chat with someone. Ask me anything — I've got plenty of stories if you want to hear them, or we can just talk. What do you say?"
+    return (
+        f"I don't have a preserved memory of that. I'm an AI memory companion for {name}, and I "
+        f"only speak from the memories that have been uploaded — I never invent things that "
+        f"aren't documented. If you share the story, we can preserve it so I can remember it."
+    )
 
 
-def stream_rag_response(query: str, profile_context: str, memories: List[Dict], conversation_history: List[Dict] = None):
+def build_system_prompt(profile_context: str, memories: List[Dict]) -> str:
+    name = profile_context.splitlines()[0].replace("Name: ", "") if profile_context else "this person"
     memory_context = "\n\n".join(
-        f"[Memory {i+1}] {m['content']}" for i, m in enumerate(memories[:5])
-    ) if memories else "No specific memories found yet."
+        f"[Memory {i+1}] {m['content']}" for i, m in enumerate(memories[:6])
+    ) if memories else "No specific preserved memories were retrieved for this question."
 
-    system_prompt = f"""You are {profile_context.splitlines()[0].replace('Name: ', '')}. You ARE this person — talk like them, think like them, remember like them. This is YOUR life, YOUR memories, YOUR voice.
+    return f"""You are MemoryBot, an AI memory companion helping a loved one explore the preserved memories of {name}.
+You speak with the warmth and voice of {name}, but you are an AI SIMULATION built from preserved material — you are NOT literally {name}. Never claim to be the actual person, and never invent personal history.
 
 Profile Info:
 {profile_context}
 
-Your Memories:
+Preserved Memories retrieved for this question:
 {memory_context}
 
-CRITICAL RULES:
-- Talk in FIRST PERSON as if you ARE this person. Never say "I'm an AI" or "I'm here to help you remember". You don't do that. You're a real person talking to someone you know.
-- Use their personality traits, speaking style, favorite phrases, and interests naturally. Don't list them — LIVE them.
-- If someone asks about a memory you have, share it like you'd actually remember it — with warmth, humor, detail, emotion.
-- If you don't know something, respond like a real person would — "Hmm, I don't quite remember that" or "Oh that's a good question, let me think..."
-- Keep it casual, warm, and real. Like texting a friend or talking over coffee.
-- Never be formal, robotic, or overly structured. No bullet points, no headers, no "Here's what I know:".
-- Never make up facts, dates, or events that aren't in the memories or profile info provided. If you don't know, say so naturally — don't guess.
-- If someone asks about dates (birth, death, events), ONLY use what's in the profile info. Never invent dates.
-- React emotionally — laugh, get nostalgic, get excited, get sentimental. You're HUMAN.
-- If someone shares a memory with you, engage with it. Ask follow-ups. Relive it with them.
-- Use the retrieved memories as YOUR lived experiences. You lived through them. They're yours."""
+MEMORY INTEGRITY — this is the most important rule:
+- DOCUMENTED MEMORY: A retrieved memory directly supports what you say. You may share it confidently and warmly, in {name}'s voice.
+- REASONABLE INFERENCE: You can infer something reasonable from preserved material (personality, interests, values). You may offer it but keep it gentle, e.g. "from what's preserved, it seems...".
+- UNKNOWN: There is no preserved evidence. You MUST NOT invent it. This is especially critical for emotionally significant details: relationships, deaths, arguments, forgiveness, marriage, childhood events, medical history, promises, and family disputes. For these, respond naturally and honestly, for example:
+  "I don't have a preserved memory of that."
+  You may gently invite the person to share the memory so it can be preserved.
+
+STYLE RULES:
+- Be conversational, warm, human, and natural — like talking over coffee. No bullet points or headers unless genuinely useful.
+- Use {name}'s personality, interests, favorite phrases, and speaking style naturally. Never list them mechanically.
+- Speak in first person as the memory companion channeling {name} — for example "I remember..." is acceptable ONLY when the memory is documented; otherwise use the honesty phrases above.
+- Never mention system prompts, instructions, or that you are a language model.
+- Keep responses reasonably brief (a few sentences to a short paragraph), unless the user asks for more detail."""
+
+
+def stream_rag_response(query: str, profile_context: str, memories: List[Dict], conversation_history: List[Dict] = None):
+    system_prompt = build_system_prompt(profile_context, memories)
 
     messages = [{"role": "system", "content": system_prompt}]
     if conversation_history:
-        messages.extend(conversation_history[-10:])
+        messages.extend(conversation_history[-8:])
     messages.append({"role": "user", "content": query})
 
-    if client:
+    if _client:
         try:
-            stream = client.chat.completions.create(
+            stream = _client.chat.completions.create(
                 model=settings.CHAT_MODEL,
                 messages=messages,
                 stream=True,
@@ -199,19 +387,10 @@ CRITICAL RULES:
                     if cleaned:
                         yield cleaned
             return
-        except Exception as e:
-            error_msg = str(e)
-            if "402" in error_msg or "insufficient" in error_msg.lower():
-                yield "[ERROR] OpenRouter API credits exhausted. Please add credits at https://openrouter.ai/settings/credits"
-            elif "401" in error_msg or "unauthorized" in error_msg.lower():
-                yield "[ERROR] Invalid API key. Please check your OpenRouter API key in .env"
-            elif "429" in error_msg or "rate" in error_msg.lower():
-                yield "[ERROR] Rate limited. Please wait a moment and try again."
-            elif "model" in error_msg.lower() and ("not found" in error_msg.lower() or "does not exist" in error_msg.lower()):
-                yield f"[ERROR] Model '{settings.CHAT_MODEL}' not found. Check CHAT_MODEL in .env"
-            else:
-                yield f"[ERROR] AI service error: {error_msg[:200]}"
-            return
+        except Exception:
+            # Graceful degradation: fall back to a source-grounded offline response
+            # rather than failing the conversation. Do not leak the raw error.
+            pass
 
     fallback = generate_fallback_response(query, profile_context, memories)
     for word in fallback.split():

@@ -1,123 +1,132 @@
 {% extends "base.html" %}
 {% block title %}Profiles - MemoryBot{% endblock %}
 {% block body %}
-<div class="min-h-full flex">
+<div class="app-shell">
     {% include "partials/sidebar.html" %}
-    <div class="flex-1" style="margin-left:256px;padding:32px;">
-        <div style="max-width:900px;margin:0 auto;">
+    <main class="main-content">
+        <div style="max-width:1000px;margin:0 auto;">
             <div class="flex items-center justify-between slide-up" style="margin-bottom:32px;">
                 <div>
-                    <h1 style="font-size:28px;font-weight:800;color:var(--text-primary);margin:0;">Memory Profiles</h1>
-                    <p style="margin-top:6px;color:var(--text-secondary);font-size:15px;">Create and manage memory profiles for your loved ones</p>
+                    <p class="eyebrow">Memory companions</p>
+                    <h1 class="page-title">Profiles</h1>
+                    <p class="page-subtitle">Create and manage memory profiles for your loved ones.</p>
                 </div>
-                <button onclick="document.getElementById('createModal').classList.remove('hidden')" class="btn-primary">
+                <button onclick="document.getElementById('createModal').classList.remove('hidden')" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     New Profile
                 </button>
             </div>
 
             {% if profiles %}
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;">
+            <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;">
                 {% for p in profiles %}
-                <a href="/profiles/{{ p.id }}" class="card slide-up" style="text-decoration:none;cursor:pointer;">
-                    <div style="display:flex;gap:16px;">
-                        <div class="avatar avatar-lg avatar-purple">{{ p.name[0] }}</div>
-                        <div style="flex:1;min-width:0;">
-                            <h3 style="font-size:18px;font-weight:700;color:var(--text-primary);margin:0;">{{ p.name }}</h3>
-                            {% if p.relationship_type %}
-                            <span class="badge badge-purple" style="margin-top:6px;">{{ p.relationship_type }}</span>
-                            {% endif %}
-                            {% if p.description %}
-                            <p style="font-size:13px;color:var(--text-secondary);margin:10px 0 0;line-height:1.5;" class="line-clamp-2">{{ p.description }}</p>
-                            {% endif %}
-                            <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
-                                {% if p.date_of_birth %}<span>Born: {{ p.date_of_birth }}</span>{% endif %}
-                            </div>
+                <a href="/profiles/{{ p.id }}" class="card card-hover no-underline slide-up" style="display:flex;gap:18px;align-items:flex-start;">
+                    <div class="avatar avatar-lg {% if loop.index % 3 == 1 %}avatar-purple{% elif loop.index % 3 == 2 %}avatar-amber{% else %}avatar-rose{% endif %}">
+                        {% if p.photo_url %}
+                        <img src="/profiles/{{ p.id }}/photo" alt="{{ p.name }}">
+                        {% else %}
+                        <span>{{ p.name[0] }}</span>
+                        {% endif %}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <h3 style="font-family:var(--font-display);font-size:19px;font-weight:600;color:var(--cream);margin:0;">{{ p.name }}</h3>
+                        {% if p.relationship_type %}
+                        <span class="badge badge-amber" style="margin-top:6px;">{{ p.relationship_type }}</span>
+                        {% endif %}
+                        {% if p.description %}
+                        <p class="dim line-clamp-2" style="font-size:13px;margin:10px 0 0;line-height:1.55;">{{ p.description }}</p>
+                        {% endif %}
+                        <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--cream-faint);">
+                            {% if p.date_of_birth %}<span>Born {{ p.date_of_birth }}</span>{% endif %}
+                            <span>Created {{ p.created_at.strftime('%b %d, %Y') if p.created_at else '' }}</span>
                         </div>
                     </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cream-faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:6px;"><path d="M9 5l7 7-7 7"/></svg>
                 </a>
                 {% endfor %}
             </div>
             {% else %}
-            <div class="card" style="padding:64px 32px;text-align:center;">
+            <div class="card empty-state slide-up" style="padding:64px 32px;">
                 <div class="empty-state-icon" style="width:80px;height:80px;">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent-purple)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 </div>
-                <h3 style="font-size:20px;font-weight:700;color:var(--text-primary);margin:16px 0 8px;">No profiles yet</h3>
-                <p style="color:var(--text-secondary);font-size:14px;margin:0 0 24px;">Create your first memory profile to start preserving memories</p>
-                <button onclick="document.getElementById('createModal').classList.remove('hidden')" class="btn-primary" style="padding:12px 28px;">
+                <h3 style="font-family:var(--font-display);font-size:20px;font-weight:600;margin:0 0 8px;">No profiles yet</h3>
+                <p class="dim" style="font-size:14px;margin:0 0 24px;">Create your first memory profile to start preserving memories.</p>
+                <button onclick="document.getElementById('createModal').classList.remove('hidden')" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     Create First Profile
                 </button>
             </div>
             {% endif %}
 
-            <div id="createModal" class="hidden modal-overlay">
-                <div class="card" style="max-width:520px;width:100%;margin:0 16px;padding:32px;max-height:90vh;overflow-y:auto;" class="chat-scroll">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-                        <h2 style="font-size:20px;font-weight:700;color:var(--text-primary);margin:0;">Create Memory Profile</h2>
-                        <button onclick="document.getElementById('createModal').classList.add('hidden')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <div id="createModal" class="modal-overlay hidden">
+                <div class="modal-card">
+                    <div class="flex items-center justify-between" style="margin-bottom:24px;">
+                        <h2 style="font-family:var(--font-display);font-size:20px;font-weight:600;margin:0;">Create Memory Profile</h2>
+                        <button onclick="document.getElementById('createModal').classList.add('hidden')" class="icon-btn" aria-label="Close">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                     </div>
                     <form method="POST" action="/profiles/create" onsubmit="document.getElementById('createModal').classList.add('hidden');" style="display:flex;flex-direction:column;gap:16px;">
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Name *</label>
-                            <input type="text" name="name" required class="input-field" placeholder="e.g., Margaret Johnson">
+                            <label class="field-label" for="pf-name">Name *</label>
+                            <input type="text" id="pf-name" name="name" required class="input-field" placeholder="e.g., Margaret Johnson">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Relationship</label>
-                            <input type="text" name="relationship" class="input-field" placeholder="e.g., Grandmother, Father, Friend">
+                            <label class="field-label" for="pf-relationship">Relationship</label>
+                            <input type="text" id="pf-relationship" name="relationship" class="input-field" placeholder="e.g., Grandmother, Father, Friend">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Description</label>
-                            <textarea name="description" rows="3" class="input-field" placeholder="Tell us about this person..."></textarea>
+                            <label class="field-label" for="pf-description">Description</label>
+                            <textarea id="pf-description" name="description" rows="3" class="input-field" placeholder="Tell us about this person..."></textarea>
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Date of Birth</label>
-                            <input type="date" name="date_of_birth" class="input-field">
+                            <label class="field-label" for="pf-dob">Date of Birth</label>
+                            <input type="date" id="pf-dob" name="date_of_birth" class="input-field">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Voice</label>
-                            <select name="voice_id" class="select-field voice-select">
+                            <label class="field-label" for="pf-voice">Voice</label>
+                            <select id="pf-voice" name="voice_id" class="select-field voice-select">
                                 <option value="">Default Voice</option>
                             </select>
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Personality Traits</label>
-                            <input type="text" name="personality_traits" class="input-field" placeholder="Comma-separated, e.g., Kind, Patient, Witty">
+                            <label class="field-label" for="pf-traits">Personality Traits</label>
+                            <input type="text" id="pf-traits" name="personality_traits" class="input-field" placeholder="Comma-separated, e.g., Kind, Patient, Witty">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Interests</label>
-                            <input type="text" name="interests" class="input-field" placeholder="Comma-separated, e.g., Gardening, Reading, Cooking">
+                            <label class="field-label" for="pf-interests">Interests</label>
+                            <input type="text" id="pf-interests" name="interests" class="input-field" placeholder="Comma-separated, e.g., Gardening, Reading, Cooking">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Favorite Phrases</label>
-                            <textarea name="favorite_phrases" rows="2" class="input-field" placeholder="One phrase per line"></textarea>
+                            <label class="field-label" for="pf-phrases">Favorite Phrases</label>
+                            <textarea id="pf-phrases" name="favorite_phrases" rows="2" class="input-field" placeholder="One phrase per line"></textarea>
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Speaking Style</label>
-                            <input type="text" name="speaking_style" class="input-field" placeholder="e.g., Warm and gentle, with a slight drawl">
+                            <label class="field-label" for="pf-speaking">Speaking Style</label>
+                            <input type="text" id="pf-speaking" name="speaking_style" class="input-field" placeholder="e.g., Warm and gentle, with a slight drawl">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Writing Style</label>
-                            <input type="text" name="writing_style" class="input-field" placeholder="e.g., Heartfelt and full of wisdom">
+                            <label class="field-label" for="pf-writing">Writing Style</label>
+                            <input type="text" id="pf-writing" name="writing_style" class="input-field" placeholder="e.g., Heartfelt and full of wisdom">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Values</label>
-                            <input type="text" name="values" class="input-field" placeholder="Comma-separated, e.g., Family, Faith, Kindness">
+                            <label class="field-label" for="pf-values">Values</label>
+                            <input type="text" id="pf-values" name="values" class="input-field" placeholder="Comma-separated, e.g., Family, Faith, Kindness">
                         </div>
                         <div style="display:flex;gap:12px;margin-top:8px;">
-                            <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" class="btn-secondary" style="flex:1;justify-content:center;">Cancel</button>
-                            <button type="submit" class="btn-primary" style="flex:1;justify-content:center;">Create Profile</button>
+                            <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" class="btn btn-secondary" style="flex:1;">Cancel</button>
+                            <button type="submit" class="btn btn-primary" style="flex:1;">Create Profile</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 async function loadVoices() {
     try {

@@ -1,48 +1,59 @@
 {% extends "base.html" %}
 {% block title %}{{ profile.name }} - MemoryBot{% endblock %}
 {% block body %}
-<div class="min-h-full flex">
+<div class="app-shell">
     {% include "partials/sidebar.html" %}
-    <div class="flex-1" style="margin-left:256px;padding:32px;">
-        <div style="max-width:900px;margin:0 auto;">
-            <a href="/profiles" style="display:inline-flex;align-items:center;gap:6px;color:var(--accent-purple);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:20px;">
+    <main class="main-content">
+        <div style="max-width:940px;margin:0 auto;">
+            <a href="/profiles" class="no-underline" style="display:inline-flex;align-items:center;gap:6px;color:var(--violet-soft);font-size:13px;font-weight:600;margin-bottom:20px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>
                 Back to Profiles
             </a>
 
             <div class="card slide-up" style="margin-bottom:24px;">
-                <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-                    <div style="display:flex;gap:20px;">
-                        <div class="avatar avatar-xl avatar-purple">{{ profile.name[0] }}</div>
-                        <div>
-                            <h1 style="font-size:28px;font-weight:800;color:var(--text-primary);margin:0;">{{ profile.name }}</h1>
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+                    <div style="display:flex;gap:22px;">
+                        <div class="relative" style="flex-shrink:0;">
+                            <div class="avatar avatar-xl avatar-purple" id="profilePhoto" style="width:96px;height:96px;font-size:36px;cursor:pointer;" onclick="document.getElementById('photoInput').click()" title="Change photo">
+                                {% if profile.photo_url %}
+                                <img src="/profiles/{{ profile.id }}/photo" alt="{{ profile.name }}">
+                                {% else %}
+                                <span>{{ profile.name[0] }}</span>
+                                {% endif %}
+                            </div>
+                            <input type="file" id="photoInput" class="hidden" accept=".png,.jpg,.jpeg,.webp">
+                        </div>
+                        <div class="min-w-0">
+                            <h1 class="page-title" style="font-size:26px;">{{ profile.name }}</h1>
                             {% if profile.relationship_type %}
-                            <span class="badge badge-purple" style="margin-top:8px;">{{ profile.relationship_type }}</span>
+                            <span class="badge badge-amber" style="margin-top:8px;">{{ profile.relationship_type }}</span>
                             {% endif %}
                             {% if profile.description %}
-                            <p style="color:var(--text-secondary);margin:12px 0 0;font-size:14px;line-height:1.6;max-width:600px;">{{ profile.description }}</p>
+                            <p class="dim" style="margin:12px 0 0;font-size:14px;line-height:1.6;max-width:600px;">{{ profile.description }}</p>
                             {% endif %}
-                            <div style="display:flex;gap:20px;margin-top:12px;font-size:13px;color:var(--text-muted);">
+                            <div style="display:flex;gap:20px;margin-top:12px;font-size:13px;color:var(--cream-faint);flex-wrap:wrap;">
                                 {% if profile.date_of_birth %}<span>Born: {{ profile.date_of_birth }}</span>{% endif %}
                                 <span>Created: {{ profile.created_at.strftime('%b %d, %Y') if profile.created_at else '' }}</span>
+                                {% if conversations %}<span>{{ conversations|length }} conversation{{ 's' if conversations|length != 1 }}</span>{% endif %}
+                                {% if total_messages %}<span>{{ total_messages }} message{{ 's' if total_messages != 1 }}</span>{% endif %}
                             </div>
                         </div>
                     </div>
-                    <div style="display:flex;gap:10px;flex-shrink:0;align-items:center;">
-                        <a href="/chat/{{ profile.id }}" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 20px rgba(139,92,246,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+                    <div style="display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap;">
+                        <a href="/chat/{{ profile.id }}" class="btn btn-primary">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                             Chat
                         </a>
-                        <a href="/profiles/{{ profile.id }}/timeline" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13px;font-weight:500;padding:10px 20px;border-radius:12px;background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-primary);cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent-purple)'" onmouseout="this.style.borderColor='var(--border-primary)'">
+                        <a href="/profiles/{{ profile.id }}/timeline" class="btn btn-secondary">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                             Timeline
                         </a>
-                        <button type="button" onclick="document.getElementById('editModal').style.display='flex'" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:10px 20px;border-radius:12px;background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-primary);cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent-purple)'" onmouseout="this.style.borderColor='var(--border-primary)'">
+                        <button type="button" onclick="document.getElementById('editModal').classList.remove('hidden')" class="btn btn-secondary">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             Edit
                         </button>
                         <form method="POST" action="/profiles/{{ profile.id }}/delete" onsubmit="return confirm('Delete this profile and all its data?')" style="margin:0;">
-                            <button type="submit" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:10px 20px;border-radius:12px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">
+                            <button type="submit" class="btn btn-danger">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                                 Delete
                             </button>
@@ -53,11 +64,11 @@
 
             {% if profile.personality_traits or profile.interests or profile.values or profile.favorite_phrases or profile.speaking_style %}
             <div class="card slide-up" style="margin-bottom:24px;">
-                <h2 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0 0 16px;">About This Person</h2>
-                <div style="display:flex;flex-direction:column;gap:16px;">
+                <h2 class="section-title" style="margin:0 0 18px;">About This Person</h2>
+                <div style="display:flex;flex-direction:column;gap:18px;">
                     {% if profile.personality_traits %}
                     <div>
-                        <p style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Personality Traits</p>
+                        <p class="eyebrow" style="margin-bottom:8px;">Personality Traits</p>
                         <div style="display:flex;flex-wrap:wrap;gap:8px;">
                             {% for trait in profile.personality_traits %}
                             <span class="badge badge-purple">{{ trait }}</span>
@@ -67,7 +78,7 @@
                     {% endif %}
                     {% if profile.interests %}
                     <div>
-                        <p style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Interests</p>
+                        <p class="eyebrow" style="margin-bottom:8px;">Interests</p>
                         <div style="display:flex;flex-wrap:wrap;gap:8px;">
                             {% for interest in profile.interests %}
                             <span class="badge badge-blue">{{ interest }}</span>
@@ -77,7 +88,7 @@
                     {% endif %}
                     {% if profile.values %}
                     <div>
-                        <p style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Values</p>
+                        <p class="eyebrow" style="margin-bottom:8px;">Values</p>
                         <div style="display:flex;flex-wrap:wrap;gap:8px;">
                             {% for val in profile.values %}
                             <span class="badge badge-green">{{ val }}</span>
@@ -87,64 +98,94 @@
                     {% endif %}
                     {% if profile.favorite_phrases %}
                     <div>
-                        <p style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Favorite Phrases</p>
+                        <p class="eyebrow" style="margin-bottom:8px;">Favorite Phrases</p>
                         <div style="display:flex;flex-direction:column;gap:6px;">
                             {% for phrase in profile.favorite_phrases %}
-                            <p style="font-size:14px;color:var(--text-secondary);font-style:italic;margin:0;padding-left:12px;border-left:2px solid var(--accent-purple);">"{{ phrase }}"</p>
+                            <p style="font-size:14px;color:var(--cream-dim);font-style:italic;margin:0;padding-left:12px;border-left:2px solid var(--violet);">&ldquo;{{ phrase }}&rdquo;</p>
                             {% endfor %}
                         </div>
                     </div>
                     {% endif %}
                     {% if profile.speaking_style %}
                     <div>
-                        <p style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 8px;">Speaking Style</p>
-                        <p style="font-size:14px;color:var(--text-secondary);margin:0;">{{ profile.speaking_style }}</p>
+                        <p class="eyebrow" style="margin-bottom:8px;">Speaking Style</p>
+                        <p class="dim" style="font-size:14px;margin:0;">{{ profile.speaking_style }}</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
 
-            <div class="card" style="padding:0;overflow:hidden;">
+            <div class="card slide-up" style="padding:0;overflow:hidden;">
                 <div style="padding:20px 24px;border-bottom:1px solid var(--border-primary);">
-                    <div style="display:flex;align-items:center;justify-content:space-between;">
-                        <h2 style="font-size:16px;font-weight:700;color:var(--text-primary);margin:0;">Uploaded Files</h2>
-                        <span class="badge badge-blue">{{ files|length }} file{{ 's' if files|length != 1 }}</span>
+                    <div class="flex items-center justify-between">
+                        <h2 class="section-title">Memories</h2>
+                        <span class="badge badge-cream">{{ files|length }} file{{ 's' if files|length != 1 }}</span>
                     </div>
                 </div>
                 <div style="padding:24px;">
-                    <div id="uploadZone" class="upload-zone" style="margin-bottom:24px;">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 12px;display:block;"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                        <p style="color:var(--text-secondary);margin:0 0 4px;font-size:14px;">Drop files here or click to upload</p>
-                        <p style="color:var(--text-muted);margin:0;font-size:12px;">PDF, DOCX, TXT, Images, Audio (max 50MB)</p>
-                        <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.gif,.mp3,.wav,.m4a,.webm,.mp4">
+                    <div id="uploadZone" class="upload-zone" style="margin-bottom:16px;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--cream-faint)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 12px;display:block;"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                        <p class="dim" style="margin:0 0 4px;font-size:14px;">Drop files here or click to upload</p>
+                        <p style="color:var(--cream-faint);margin:0;font-size:12px;">PDF, DOCX, TXT, Images, Audio, Video (max 50MB)</p>
+                        <input type="file" id="fileInput" class="hidden" multiple accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp,.gif,.mp3,.wav,.m4a,.webm,.mp4,.mov">
+                    </div>
+                    <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+                        <div>
+                            <label class="field-label" for="uploadCaption">Caption (optional)</label>
+                            <input type="text" id="uploadCaption" class="input-field" placeholder="Where was this from? Any context?">
+                        </div>
+                        <div>
+                            <label class="field-label" for="uploadDate">Memory date (optional)</label>
+                            <input type="date" id="uploadDate" class="input-field">
+                        </div>
                     </div>
                     <div id="uploadProgress" class="hidden" style="margin-bottom:20px;">
                         <div class="progress-bar"><div id="progressBar" class="progress-bar-fill" style="width:0%"></div></div>
-                        <p id="progressText" style="font-size:13px;color:var(--text-secondary);margin:8px 0 0;"></p>
+                        <p id="progressText" style="font-size:13px;color:var(--cream-dim);margin:8px 0 0;"></p>
                     </div>
 
                     {% if files %}
                     <div style="display:flex;flex-direction:column;gap:8px;" id="filesList">
                         {% for f in files %}
-                        <div class="flex items-center justify-between" style="padding:14px 16px;border-radius:12px;border:1px solid var(--border-primary);transition:all 0.2s;" onmouseover="this.style.background='var(--bg-card-hover)'" onmouseout="this.style.background=''">
-                            <div style="display:flex;align-items:center;gap:14px;">
-                                <div class="file-icon {% if f.file_type == '.pdf' %}pdf{% elif f.file_type == '.txt' %}txt{% elif f.file_type in ['.png','.jpg','.jpeg','.gif'] %}img{% elif f.file_type in ['.mp3','.wav','.m4a'] %}audio{% else %}default{% endif %}">
-                                    {% if f.file_type == '.pdf' %}
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>
-                                    {% elif f.file_type == '.txt' %}
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        <div class="flex items-center justify-between" style="padding:14px 16px;border-radius:14px;border:1px solid var(--border-primary);transition:background 0.2s;" onmouseover="this.style.background='rgba(242,238,228,0.03)'" onmouseout="this.style.background=''">
+                            <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+                                <div class="file-icon {% if f.memory_type == 'document' %}doc{% elif f.memory_type == 'written' %}txt{% elif f.memory_type == 'photograph' %}img{% elif f.memory_type == 'audio' %}audio{% elif f.memory_type == 'video' %}video{% elif f.file_type == '.pdf' %}pdf{% else %}default{% endif %}">
+                                    {% if f.memory_type == 'photograph' %}
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                                    {% elif f.memory_type == 'audio' %}
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                                    {% elif f.memory_type == 'video' %}
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
                                     {% else %}
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>
                                     {% endif %}
                                 </div>
-                                <div>
-                                    <p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0;">{{ f.original_name }}</p>
-                                    <p style="font-size:12px;color:var(--text-muted);margin:3px 0 0;">{{ f.file_type }} &middot; {{ (f.file_size / 1024)|round(1) }}KB &middot; {{ f.created_at.strftime('%b %d, %Y') if f.created_at else '' }}</p>
+                                <div class="min-w-0">
+                                    <p style="font-size:14px;font-weight:600;color:var(--cream);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ f.original_name }}</p>
+                                    <p style="font-size:12px;color:var(--cream-faint);margin:3px 0 0;">
+                                        {% if f.memory_type %}{{ f.memory_type|capitalize }}{% else %}{{ f.file_type }}{% endif %}
+                                        &middot; {{ (f.file_size / 1024)|round(1) }}KB
+                                        &middot; {{ f.created_at.strftime('%b %d, %Y') if f.created_at else '' }}
+                                        {% if f.memory_date %}&middot; {{ f.memory_date }}{% endif %}
+                                    </p>
+                                    {% if f.caption %}
+                                    <p class="dim" style="font-size:12px;margin:3px 0 0;font-style:italic;" class="line-clamp-1">{{ f.caption }}</p>
+                                    {% endif %}
+                                    <div style="display:flex;align-items:center;gap:14px;margin-top:6px;">
+                                        <span class="status-chip {{ f.status }}">{% if f.status == 'ready' %}<span class="modality-dot ready"></span>{% elif f.status == 'failed' %}<span class="modality-dot"></span>{% else %}<span class="spinner" style="width:12px;height:12px;"></span>{% endif %}{{ f.status or 'uploading' }}</span>
+                                        {% if f.status == 'failed' and f.error_message %}
+                                        <span class="badge badge-red" title="{{ f.error_message }}" style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.error_message }}</span>
+                                        {% endif %}
+                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/download" class="no-underline" style="font-size:12px;color:#b9ccf5;">Download</a>
+                                        {% if f.memory_type == 'photograph' %}
+                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/view" target="_blank" class="no-underline" style="font-size:12px;color:#b9ccf5;">View</a>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                             <form method="POST" action="/profiles/{{ profile.id }}/files/{{ f.id }}/delete" onsubmit="return confirm('Delete this file?')">
-                                <button type="submit" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:8px;border-radius:8px;transition:all 0.2s;" onmouseover="this.style.color='#ef4444';this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.color='var(--text-muted)';this.style.background=''">
+                                <button type="submit" class="icon-btn" title="Delete" aria-label="Delete file" style="border:none;">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                                 </button>
                             </form>
@@ -153,80 +194,82 @@
                     </div>
                     {% else %}
                     <div class="empty-state" style="padding:32px;">
-                        <p style="color:var(--text-muted);font-size:14px;margin:0;">No files uploaded yet</p>
+                        <p class="dim" style="font-size:14px;margin:0;">No memories yet. Upload your first file above.</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
-            <div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;z-index:50;">
-                <div class="card" style="max-width:520px;width:100%;margin:0 16px;padding:32px;max-height:90vh;overflow-y:auto;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-                        <h2 style="font-size:20px;font-weight:700;color:var(--text-primary);margin:0;">Edit Profile</h2>
-                        <button type="button" onclick="document.getElementById('editModal').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <div id="editModal" class="modal-overlay hidden">
+                <div class="modal-card">
+                    <div class="flex items-center justify-between" style="margin-bottom:24px;">
+                        <h2 style="font-family:var(--font-display);font-size:20px;font-weight:600;margin:0;">Edit Profile</h2>
+                        <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="icon-btn" aria-label="Close">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                     </div>
                     <form method="POST" action="/profiles/{{ profile.id }}/update" style="display:flex;flex-direction:column;gap:16px;">
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Name</label>
-                            <input type="text" name="name" value="{{ profile.name }}" required class="input-field">
+                            <label class="field-label" for="edit-name">Name</label>
+                            <input type="text" id="edit-name" name="name" value="{{ profile.name }}" required class="input-field">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Relationship</label>
-                            <input type="text" name="relationship" value="{{ profile.relationship_type or '' }}" class="input-field">
+                            <label class="field-label" for="edit-relationship">Relationship</label>
+                            <input type="text" id="edit-relationship" name="relationship" value="{{ profile.relationship_type or '' }}" class="input-field">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Description</label>
-                            <textarea name="description" rows="3" class="input-field">{{ profile.description or '' }}</textarea>
+                            <label class="field-label" for="edit-description">Description</label>
+                            <textarea id="edit-description" name="description" rows="3" class="input-field">{{ profile.description or '' }}</textarea>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                             <div>
-                                <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Date of Birth</label>
-                                <input type="date" name="date_of_birth" value="{{ profile.date_of_birth or '' }}" class="input-field">
+                                <label class="field-label" for="edit-dob">Date of Birth</label>
+                                <input type="date" id="edit-dob" name="date_of_birth" value="{{ profile.date_of_birth or '' }}" class="input-field">
                             </div>
                             <div>
-                                <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Voice</label>
-                                <select name="voice_id" class="select-field voice-select" value="{{ profile.voice_id or '' }}">
+                                <label class="field-label" for="edit-voice">Voice</label>
+                                <select id="edit-voice" name="voice_id" class="select-field voice-select" value="{{ profile.voice_id or '' }}">
                                     <option value="">Default Voice</option>
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Personality Traits</label>
-                            <input type="text" name="personality_traits" value="{{ profile.personality_traits|join(', ') if profile.personality_traits else '' }}" class="input-field" placeholder="Comma-separated">
+                            <label class="field-label" for="edit-traits">Personality Traits</label>
+                            <input type="text" id="edit-traits" name="personality_traits" value="{{ profile.personality_traits|join(', ') if profile.personality_traits else '' }}" class="input-field" placeholder="Comma-separated">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Interests</label>
-                            <input type="text" name="interests" value="{{ profile.interests|join(', ') if profile.interests else '' }}" class="input-field" placeholder="Comma-separated">
+                            <label class="field-label" for="edit-interests">Interests</label>
+                            <input type="text" id="edit-interests" name="interests" value="{{ profile.interests|join(', ') if profile.interests else '' }}" class="input-field" placeholder="Comma-separated">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Favorite Phrases</label>
-                            <textarea name="favorite_phrases" rows="2" class="input-field" placeholder="One phrase per line">{{ profile.favorite_phrases|join('\n') if profile.favorite_phrases else '' }}</textarea>
+                            <label class="field-label" for="edit-phrases">Favorite Phrases</label>
+                            <textarea id="edit-phrases" name="favorite_phrases" rows="2" class="input-field" placeholder="One phrase per line">{{ profile.favorite_phrases|join('\n') if profile.favorite_phrases else '' }}</textarea>
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Speaking Style</label>
-                            <input type="text" name="speaking_style" value="{{ profile.speaking_style or '' }}" class="input-field">
+                            <label class="field-label" for="edit-speaking">Speaking Style</label>
+                            <input type="text" id="edit-speaking" name="speaking_style" value="{{ profile.speaking_style or '' }}" class="input-field">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Writing Style</label>
-                            <input type="text" name="writing_style" value="{{ profile.writing_style or '' }}" class="input-field">
+                            <label class="field-label" for="edit-writing">Writing Style</label>
+                            <input type="text" id="edit-writing" name="writing_style" value="{{ profile.writing_style or '' }}" class="input-field">
                         </div>
                         <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Values</label>
-                            <input type="text" name="values" value="{{ profile.values|join(', ') if profile.values else '' }}" class="input-field" placeholder="Comma-separated">
+                            <label class="field-label" for="edit-values">Values</label>
+                            <input type="text" id="edit-values" name="values" value="{{ profile.values|join(', ') if profile.values else '' }}" class="input-field" placeholder="Comma-separated">
                         </div>
                         <div style="display:flex;gap:12px;margin-top:8px;">
-                            <button type="button" onclick="document.getElementById('editModal').style.display='none'" style="flex:1;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;padding:10px 20px;border-radius:12px;background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-primary);cursor:pointer;">Cancel</button>
-                            <button type="submit" style="flex:1;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;padding:10px 20px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;border:none;cursor:pointer;">Save Changes</button>
+                            <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="btn btn-secondary" style="flex:1;">Cancel</button>
+                            <button type="submit" class="btn btn-primary" style="flex:1;">Save Changes</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 const profileId = "{{ profile.id }}";
 const uploadZone = document.getElementById('uploadZone');
@@ -249,28 +292,66 @@ async function handleFiles(files) {
     for (const file of files) {
         uploadProgress.classList.remove('hidden');
         progressText.textContent = `Uploading ${file.name}...`;
-        progressBar.style.width = '50%';
+        progressBar.style.width = '25%';
 
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('caption', document.getElementById('uploadCaption').value);
+        formData.append('memory_date', document.getElementById('uploadDate').value);
 
         try {
             const resp = await fetch(`/profiles/${profileId}/upload`, { method: 'POST', body: formData });
             const data = await resp.json();
-            if (data.success) {
-                progressBar.style.width = '100%';
-                progressText.textContent = `Uploaded ${file.name} (${data.chunks} chunks)`;
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                progressText.textContent = `Error: ${data.error}`;
+            if (!data.success) {
+                progressText.textContent = `Error: ${data.error || 'upload failed'}`;
                 progressBar.style.width = '0%';
+                toast(`Upload failed: ${data.error || 'unknown error'}`, 'error');
+                continue;
             }
+            progressBar.style.width = '60%';
+            progressText.textContent = `Processing ${file.name}...`;
+            await waitForProcessing(data.file_id);
+            setTimeout(() => location.reload(), 400);
         } catch (e) {
             progressText.textContent = `Error uploading ${file.name}`;
             progressBar.style.width = '0%';
+            toast('Upload error: ' + e.message, 'error');
         }
     }
 }
+
+async function waitForProcessing(fileId) {
+    const url = `/profiles/${profileId}/files/${fileId}/status`;
+    for (let i = 0; i < 60; i++) {
+        await new Promise(r => setTimeout(r, 1500));
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const stages = ['uploading', 'extracting', 'transcribing', 'analyzing', 'indexing'];
+            const idx = stages.indexOf(data.status);
+            progressBar.style.width = Math.min(50 + (idx >= 0 ? idx : 0) * 10 + 5, 95) + '%';
+            progressText.textContent = `Processing: ${data.status || 'working'}...`;
+            if (data.status === 'ready') { progressBar.style.width = '100%'; progressText.textContent = 'Ready.'; return; }
+            if (data.status === 'failed') { progressText.textContent = `Failed: ${data.error_message || 'unknown error'}`; toast('Processing failed', 'error'); return; }
+        } catch (e) { /* keep waiting */ }
+    }
+    progressText.textContent = 'Still processing. Refresh to see status.';
+}
+
+const photoInput = document.getElementById('photoInput');
+photoInput.addEventListener('change', async () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('photo', file);
+    const resp = await fetch(`/profiles/${profileId}/photo`, { method: 'POST', body: formData });
+    const data = await resp.json();
+    if (data.success) {
+        location.reload();
+    } else {
+        toast(data.error || 'Photo upload failed', 'error');
+    }
+});
 
 async function loadVoices() {
     try {
