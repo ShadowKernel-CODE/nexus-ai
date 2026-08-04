@@ -11,17 +11,17 @@ from config import settings
 router = APIRouter(prefix="/voice", tags=["voice"])
 
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
-DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # Rachel
+DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL"  # Sarah - account voice that works on free plan
 
 PRESET_VOICES = [
-    {"id": "21m00Tcm4TlvDq8ikWAM", "name": "Rachel"},
-    {"id": "EXAVITQu4vr4xnSDxMaL", "name": "Bella"},
-    {"id": "ErXwobaYiN019PkySvjV", "name": "Antoni"},
-    {"id": "MF3mGyEYCl7XYWbV9V6O", "name": "Elli"},
-    {"id": "TxGEqnHWrfWFTfGW9XjX", "name": "Josh"},
-    {"id": "VR6AewLTigWG4xSOukaG", "name": "Arnold"},
+    {"id": "EXAVITQu4vr4xnSDxMaL", "name": "Sarah"},
+    {"id": "CwhRBWXzGAHq8TQ4Fs17", "name": "Roger"},
+    {"id": "FGY2WhTYpPnrIDTdsKH5", "name": "Laura"},
+    {"id": "IKne3meq5aSn9XLyUdCD", "name": "Charlie"},
+    {"id": "JBFqnCBsd6RMkjVDRZzb", "name": "George"},
+    {"id": "SAz9YHcvj6GT2YYXdXww", "name": "River"},
+    {"id": "Xb7hH8MSUJpSbSDYk0k2", "name": "Alice"},
     {"id": "pNInz6obpgDQGcFmaJgB", "name": "Adam"},
-    {"id": "yoZ06aMxZJJ28mfd3POQ", "name": "Sam"},
 ]
 
 
@@ -52,10 +52,10 @@ async def text_to_speech(request: Request, db: Session = Depends(get_db)):
         if profile and profile.voice_id:
             voice_id = profile.voice_id
 
-    try:
+    async def synthesize(vid: str):
         async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.post(
-                f"{ELEVENLABS_BASE_URL}/text-to-speech/{voice_id}",
+                f"{ELEVENLABS_BASE_URL}/text-to-speech/{vid}",
                 headers={
                     "xi-api-key": settings.ELEVENLABS_API_KEY,
                     "Content-Type": "application/json",
@@ -72,6 +72,12 @@ async def text_to_speech(request: Request, db: Session = Depends(get_db)):
                     },
                 },
             )
+        return resp
+
+    try:
+        resp = await synthesize(voice_id)
+        if resp.status_code != 200 and voice_id != DEFAULT_VOICE_ID:
+            resp = await synthesize(DEFAULT_VOICE_ID)
         if resp.status_code != 200:
             return JSONResponse(
                 {"error": f"ElevenLabs TTS error ({resp.status_code}): {resp.text[:300]}"},

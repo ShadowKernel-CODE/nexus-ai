@@ -53,7 +53,7 @@ def seed():
             relationship_type="Grandmother",
             date_of_birth="1925-03-15",
             date_of_death="2019-11-22",
-            voice_id="21m00Tcm4TlvDq8ikWAM",
+            voice_id="EXAVITQu4vr4xnSDxMaL",
             personality_traits=["Kind", "Patient", "Strong", "Witty", "Generous", "Resilient"],
             favorite_phrases=["Every storm runs out of rain", "You catch more flies with honey than vinegar", "A family that eats together stays together"],
             interests=["Gardening", "Reading", "Cooking", "Church activities", "Storytelling"],

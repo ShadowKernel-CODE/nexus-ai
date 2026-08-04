@@ -262,12 +262,23 @@ async function speak(text) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: text.substring(0, 2000), profile_id: profileId }),
         });
-        if (resp.ok) {
-            const blob = await resp.blob();
-            const audio = new Audio(URL.createObjectURL(blob));
-            audio.play();
+        if (!resp.ok) {
+            const data = await resp.json().catch(() => null);
+            console.error('TTS failed:', data && data.error);
+            alert('Voice failed: ' + ((data && data.error) || 'unknown error'));
+            return;
         }
-    } catch (e) {}
+        const blob = await resp.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+        try {
+            await audio.play();
+        } catch (playErr) {
+            console.error('Playback blocked:', playErr);
+            alert('Browser blocked audio playback. Click the page, then try again.');
+        }
+    } catch (e) {
+        console.error('TTS error:', e);
+    }
 }
 
 async function startRecording() {
