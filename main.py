@@ -97,15 +97,6 @@ async def redirect_handler(request: Request, exc):
     return RedirectResponse(url=exc.headers.get("Location", "/"), status_code=302)
 
 
-@app.exception_handler(Exception)
-async def debug_exception_handler(request: Request, exc):
-    import traceback
-    trace = traceback.format_exc()
-    print(f"UNHANDLED EXCEPTION on {request.method} {request.url.path}: {trace}")
-    from fastapi.responses import JSONResponse
-    return JSONResponse({"error": "unhandled", "trace": trace[-3000:]}, status_code=500)
-
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
