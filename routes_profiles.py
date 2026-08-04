@@ -35,6 +35,7 @@ async def create_profile(
     relationship: str = Form(""),
     date_of_birth: str = Form(""),
     date_of_death: str = Form(""),
+    voice_id: str = Form(""),
     personality_traits: str = Form(""),
     favorite_phrases: str = Form(""),
     interests: str = Form(""),
@@ -54,6 +55,7 @@ async def create_profile(
         relationship_type=relationship,
         date_of_birth=date_of_birth,
         date_of_death=date_of_death,
+        voice_id=voice_id,
         personality_traits=[t.strip() for t in personality_traits.split(",") if t.strip()] if personality_traits else [],
         favorite_phrases=[p.strip() for p in favorite_phrases.split("\n") if p.strip()] if favorite_phrases else [],
         interests=[i.strip() for i in interests.split(",") if i.strip()] if interests else [],
@@ -105,6 +107,7 @@ async def update_profile(
     relationship: str = Form(""),
     date_of_birth: str = Form(""),
     date_of_death: str = Form(""),
+    voice_id: str = Form(""),
     personality_traits: str = Form(""),
     favorite_phrases: str = Form(""),
     interests: str = Form(""),
@@ -127,6 +130,7 @@ async def update_profile(
     profile.relationship_type = relationship
     profile.date_of_birth = date_of_birth
     profile.date_of_death = date_of_death
+    profile.voice_id = voice_id
     profile.personality_traits = [t.strip() for t in personality_traits.split(",") if t.strip()] if personality_traits else []
     profile.favorite_phrases = [p.strip() for p in favorite_phrases.split("\n") if p.strip()] if favorite_phrases else []
     profile.interests = [i.strip() for i in interests.split(",") if i.strip()] if interests else []
@@ -306,6 +310,7 @@ async def api_profile(request: Request, profile_id: str, db: Session = Depends(g
         "relationship_type": profile.relationship_type,
         "date_of_birth": profile.date_of_birth,
         "date_of_death": profile.date_of_death,
+        "voice_id": profile.voice_id or "",
         "personality_traits": profile.personality_traits or [],
         "favorite_phrases": profile.favorite_phrases or [],
         "interests": profile.interests or [],

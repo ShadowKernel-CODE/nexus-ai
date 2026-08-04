@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "text-embedding-3-small"
     CHAT_MODEL: str = "openrouter/free"
 
+    ELEVENLABS_API_KEY: str = ""
+
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE_MB: int = 50
     ALLOWED_EXTENSIONS: str = ".pdf,.docx,.txt,.png,.jpg,.jpeg,.gif,.mp3,.wav,.m4a,.webm,.mp4"

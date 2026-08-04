@@ -49,6 +49,7 @@ class MemoryProfile(Base):
     relationship_type = Column(String, default="")
     date_of_birth = Column(String, default="")
     date_of_death = Column(String, default="")
+    voice_id = Column(String, default="")
     photo_url = Column(String, default="")
     personality_traits = Column(JSON, default=list)
     favorite_phrases = Column(JSON, default=list)
@@ -136,3 +137,17 @@ class AuditLog(Base):
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    migrate()
+
+
+def migrate():
+    from sqlalchemy import inspect, text
+    try:
+        with engine.connect() as conn:
+            inspector = inspect(engine)
+            columns = [c["name"] for c in inspector.get_columns("memory_profiles")]
+            if "voice_id" not in columns:
+                conn.execute(text("ALTER TABLE memory_profiles ADD COLUMN voice_id VARCHAR DEFAULT ''"))
+                conn.commit()
+    except Exception as e:
+        print(f"Migration warning: {e}")

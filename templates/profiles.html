@@ -32,7 +32,6 @@
                             {% endif %}
                             <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
                                 {% if p.date_of_birth %}<span>Born: {{ p.date_of_birth }}</span>{% endif %}
-                                {% if p.date_of_death %}<span>Died: {{ p.date_of_death }}</span>{% endif %}
                             </div>
                         </div>
                     </div>
@@ -74,15 +73,15 @@
                             <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Description</label>
                             <textarea name="description" rows="3" class="input-field" placeholder="Tell us about this person..."></textarea>
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                            <div>
-                                <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Date of Birth</label>
-                                <input type="date" name="date_of_birth" class="input-field">
-                            </div>
-                            <div>
-                                <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Date of Death</label>
-                                <input type="date" name="date_of_death" class="input-field">
-                            </div>
+                        <div>
+                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Date of Birth</label>
+                            <input type="date" name="date_of_birth" class="input-field">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Voice</label>
+                            <select name="voice_id" class="select-field voice-select">
+                                <option value="">Default Voice</option>
+                            </select>
                         </div>
                         <div>
                             <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Personality Traits</label>
@@ -118,4 +117,20 @@
         </div>
     </div>
 </div>
+
+<script>
+async function loadVoices() {
+    try {
+        const resp = await fetch('/voice/voices');
+        const voices = await resp.json();
+        document.querySelectorAll('.voice-select').forEach(sel => {
+            const current = sel.value;
+            sel.innerHTML = '<option value="">Default Voice</option>' +
+                (Array.isArray(voices) ? voices.map(v => `<option value="${v.id}">${v.name}</option>`).join('') : '');
+            if (current) sel.value = current;
+        });
+    } catch (e) {}
+}
+loadVoices();
+</script>
 {% endblock %}
