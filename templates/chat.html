@@ -34,7 +34,7 @@
                 <div id="convoList">
                     {% for c in conversations %}
                     <div class="flex items-center" style="margin-bottom:2px;" onmouseover="this.querySelector('.convo-delete').style.opacity='1'" onmouseout="this.querySelector('.convo-delete').style.opacity='0'">
-                        <a href="/chat/{{ c.profile_id }}/conversation/{{ c.id }}" style="display:block;padding:10px 14px;border-radius:11px;font-size:13px;color:var(--cream-dim);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all 0.15s;border:1px solid transparent;flex:1;{% if active_conversation and active_conversation.id == c.id %}background:rgba(255,70,162,0.14);color:var(--lavender);border-color:rgba(255,70,162,0.35);{% endif %}">
+                        <a href="/chat/{{ c.profile_id }}/conversation/{{ c.id }}" style="display:block;padding:10px 14px;border-radius:11px;font-size:13px;color:var(--cream-dim);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all 0.15s;border:1px solid transparent;flex:1;{% if active_conversation and active_conversation.id == c.id %}background:rgba(139,92,246,0.14);color:var(--lavender);border-color:rgba(139,92,246,0.35);{% endif %}">
                             {{ c.title }}
                         </a>
                         <button class="convo-delete" aria-label="Delete conversation" onclick="event.preventDefault();if(confirm('Delete this conversation?'))fetch('/chat/{{ c.id }}/delete',{method:'POST'}).then(()=>location.reload())" style="background:none;border:none;color:var(--cream-faint);cursor:pointer;padding:4px 8px;border-radius:6px;opacity:0;transition:opacity 0.15s;flex-shrink:0;" title="Delete conversation">

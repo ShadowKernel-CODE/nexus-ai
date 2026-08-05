@@ -176,7 +176,7 @@
                     {% if files %}
                     <div style="display:flex;flex-direction:column;gap:8px;" id="filesList">
                         {% for f in files %}
-                        <div class="flex items-center justify-between" style="padding:14px 16px;border-radius:14px;border:1px solid var(--border-primary);transition:background 0.2s;" onmouseover="this.style.background='rgba(242,238,228,0.03)'" onmouseout="this.style.background=''">
+                        <div class="flex items-center justify-between" style="padding:14px 16px;border-radius:14px;border:1px solid var(--border-primary);transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background=''">
                             <div style="display:flex;align-items:center;gap:14px;min-width:0;">
                                 <div class="file-icon {% if f.memory_type == 'document' %}doc{% elif f.memory_type == 'written' %}txt{% elif f.memory_type == 'photograph' %}img{% elif f.memory_type == 'audio' %}audio{% elif f.memory_type == 'video' %}video{% elif f.file_type == '.pdf' %}pdf{% else %}default{% endif %}">
                                     {% if f.memory_type == 'photograph' %}
