@@ -4,16 +4,17 @@
 <div class="auth-shell">
     <div class="auth-card">
         <div class="text-center slide-up" style="margin-bottom:28px;">
-            <div class="avatar avatar-xl avatar-purple" style="margin:0 auto 18px;overflow:hidden;">
+            <div class="avatar avatar-xl" style="background:var(--gradient-primary);margin:0 auto 18px;box-shadow:0 0 40px rgba(111,93,240,0.35);overflow:hidden;">
                 <img src="/static/img/logo.png" alt="MemoryBot" style="width:46px;height:46px;object-fit:contain;">
             </div>
-            <h1 style="font-family:var(--font-display);font-size:34px;font-weight:700;color:var(--cream);margin:0;">MemoryBot</h1>
-            <p class="dim" style="margin-top:8px;font-size:15px;">Preserve the people you love, forever.</p>
+            <h1 style="font-size:32px;font-weight:800;color:var(--cream);margin:0;letter-spacing:-0.02em;">MemoryBot</h1>
+            <p class="dim" style="margin-top:8px;font-size:15px;">AI Memory Companion</p>
         </div>
 
         <div class="card slide-up" style="padding:32px;">
-            <div class="alert-warning" style="margin-bottom:24px;text-align:center;font-size:13px;">
-                <strong>Disclaimer:</strong> This is an AI simulation. The AI is NOT the actual person being remembered.
+            <div class="disclaimer-note" style="margin-bottom:24px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span><strong>AI Simulation:</strong> The AI is NOT the actual person being remembered.</span>
             </div>
 
             {% if error %}
