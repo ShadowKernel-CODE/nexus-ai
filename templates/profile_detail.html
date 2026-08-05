@@ -205,9 +205,9 @@
                                         {% if f.status == 'failed' and f.error_message %}
                                         <span class="badge badge-red" title="{{ f.error_message }}" style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.error_message }}</span>
                                         {% endif %}
-                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/download" class="no-underline" style="font-size:12px;color:#ffd98a;">Download</a>
+                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/download" class="no-underline" style="font-size:12px;color:#d9a8ff;">Download</a>
                                         {% if f.memory_type in ('photograph', 'audio', 'video') %}
-                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/view" target="_blank" class="no-underline" style="font-size:12px;color:#ffd98a;">View</a>
+                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/view" target="_blank" class="no-underline" style="font-size:12px;color:#d9a8ff;">View</a>
                                         {% endif %}
                                     </div>
                                 </div>
