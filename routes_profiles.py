@@ -32,6 +32,9 @@ MEDIA_TYPES = {
     ".mov": "video/quicktime",
 }
 IMAGE_TYPES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+AUDIO_TYPES = {".mp3", ".wav", ".m4a", ".webm"}
+VIDEO_TYPES = {".mp4", ".mov"}
+INLINE_TYPES = IMAGE_TYPES | AUDIO_TYPES | VIDEO_TYPES
 
 
 def audit(db: Session, user_id, action, resource_type="", resource_id="", details=""):
@@ -379,7 +382,7 @@ async def view_file(request: Request, profile_id: str, file_id: str, db: Session
         raise HTTPException(status_code=401, detail="Unauthorized")
     file_obj = _get_owned_file(db, user, profile_id, file_id)
     ext = os.path.splitext(file_obj.filename)[1].lower()
-    if ext not in IMAGE_TYPES:
+    if ext not in INLINE_TYPES:
         raise HTTPException(status_code=404, detail="Preview not available for this file type")
     file_path = os.path.join(settings.UPLOAD_DIR, file_obj.filename)
     if not os.path.exists(file_path):
@@ -401,6 +404,17 @@ async def profile_timeline(request: Request, profile_id: str, db: Session = Depe
 
     timeline_items = []
     undated = []
+    if profile.date_of_birth:
+        dob = (profile.date_of_birth or "").strip()
+        timeline_items.append({
+            "type": "birth",
+            "date": dob,
+            "year": dob[:4] if len(dob) >= 4 else "",
+            "title": f"{profile.name} was born",
+            "label": "Birth",
+            "id": None,
+            "file_id": None,
+        })
     for f in files:
         label = {
             "document": "Document",

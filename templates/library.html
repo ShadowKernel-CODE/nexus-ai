@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Memory Library - MemoryBot{% endblock %}
+{% block body %}
+<div class="app-shell">
+    {% include "partials/sidebar.html" %}
+    <main class="main-content">
+        <div style="max-width:1040px;margin:0 auto;">
+            <div class="slide-up" style="margin-bottom:24px;">
+                <p class="eyebrow">Preserved memories</p>
+                <h1 class="page-title">Memory Library</h1>
+                <p class="page-subtitle">Every story, photograph, document, and recording you've preserved, in one place.</p>
+            </div>
+
+            <div class="filter-tabs slide-up" role="tablist" aria-label="Filter memories by type" style="margin-bottom:24px;">
+                {% for key, label in filter_labels.items() %}
+                <a href="/library{% if key %}?type={{ key }}{% endif %}"
+                   class="filter-tab {% if selected == key %}active{% endif %}"
+                   role="tab"
+                   aria-selected="{{ 'true' if selected == key else 'false' }}"
+                   aria-label="Show {{ label|lower }} memories">
+                    {{ label }}
+                    <span class="filter-count">{{ counts.get(key, 0) }}</span>
+                </a>
+                {% endfor %}
+            </div>
+
+            {% if items %}
+            <div class="library-grid">
+                {% for item in items %}
+                <article class="memory-card fade-in">
+                    {% if item.memory_type == 'photograph' %}
+                    <a href="/profiles/{{ item.profile_id }}/files/{{ item.id }}/view" class="memory-thumb" target="_blank" aria-label="Open photograph {{ item.original_name }}">
+                        <img src="/profiles/{{ item.profile_id }}/files/{{ item.id }}/view" alt="{{ item.original_name }}">
+                    </a>
+                    {% elif item.memory_type == 'audio' %}
+                    <div class="memory-media">
+                        <div class="memory-media-icon file-icon audio">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                        </div>
+                        <audio controls preload="metadata" src="/profiles/{{ item.profile_id }}/files/{{ item.id }}/view" aria-label="Play audio recording {{ item.original_name }}"></audio>
+                    </div>
+                    {% elif item.memory_type == 'video' %}
+                    <div class="memory-media">
+                        <div class="memory-media-icon file-icon video">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                        </div>
+                        <video controls preload="metadata" src="/profiles/{{ item.profile_id }}/files/{{ item.id }}/view" aria-label="Play video memory {{ item.original_name }}"></video>
+                    </div>
+                    {% else %}
+                    <div class="memory-head">
+                        <div class="file-icon {% if item.memory_type == 'written' %}txt{% else %}doc{% endif %}">
+                            {% if item.memory_type == 'written' %}
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                            {% else %}
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="memory-body">
+                        <div class="flex items-center" style="gap:8px;flex-wrap:wrap;">
+                            <span class="badge badge-purple" style="font-size:11px;">{{ item.modality_label }}</span>
+                            {% if item.memory_date %}
+                            <span class="badge badge-amber" style="font-size:11px;">{{ item.memory_date }}</span>
+                            {% endif %}
+                            {% if item.status == 'ready' %}
+                            <span class="status-chip ready" style="margin-left:auto;"><span class="modality-dot ready"></span>indexed</span>
+                            {% elif item.status == 'failed' %}
+                            <span class="status-chip failed" style="margin-left:auto;"><span class="modality-dot"></span>failed</span>
+                            {% else %}
+                            <span class="status-chip {{ item.status }}" style="margin-left:auto;"><span class="modality-dot processing"></span>{{ item.status }}</span>
+                            {% endif %}
+                        </div>
+
+                        <h3 class="memory-title">{{ item.title }}</h3>
+
+                        {% if item.memory_type == 'photograph' and item.excerpt %}
+                        <p class="memory-excerpt">{{ item.excerpt }}</p>
+                        {% elif item.memory_type in ('written', 'document') and item.excerpt %}
+                        <p class="memory-excerpt">&ldquo;{{ item.excerpt }}&rdquo;</p>
+                        {% elif item.memory_type in ('audio', 'video') and item.excerpt %}
+                        <p class="memory-excerpt">{{ item.excerpt }}</p>
+                        {% endif %}
+                        {% if item.caption and item.memory_type != 'photograph' %}
+                        <p class="memory-caption">{{ item.caption }}</p>
+                        {% endif %}
+
+                        {% if item.status == 'failed' and item.error_message %}
+                        <p class="memory-error" title="{{ item.error_message }}">{{ item.error_message }}</p>
+                        {% endif %}
+
+                        <div class="memory-foot">
+                            <a href="/profiles/{{ item.profile_id }}" class="no-underline" style="color:#cfc5ff;font-size:12px;">{{ item.profile_name }}</a>
+                            <a href="/profiles/{{ item.profile_id }}" class="btn btn-secondary btn-sm" aria-label="Open {{ item.original_name }} in its profile">
+                                Open source
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="card empty-state slide-up">
+                <div class="empty-state-icon">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                </div>
+                {% if selected %}
+                <h3 style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--cream);margin:0 0 8px;">No {{ filter_labels.get(selected, '').lower() }} preserved yet</h3>
+                <p class="dim" style="font-size:14px;margin:0 0 20px;">Add a {{ filter_labels.get(selected, 'memory').lower() }} to a memory profile to see it here.</p>
+                {% else %}
+                <h3 style="font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--cream);margin:0 0 8px;">No memories preserved yet</h3>
+                <p class="dim" style="font-size:14px;margin:0 0 20px;">Add a story, photograph, document, or recording to begin building a memory profile.</p>
+                {% endif %}
+                <a href="/profiles" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add First Memory
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+{% endblock %}

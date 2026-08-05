@@ -92,6 +92,8 @@ async def chat_conversation(request: Request, profile_id: str, conversation_id: 
     ).first()
     if not profile:
         return RedirectResponse(url="/chat", status_code=302)
+    if conversation.profile_id != profile_id:
+        return RedirectResponse(url="/chat", status_code=302)
     profiles = db.query(MemoryProfile).filter(MemoryProfile.user_id == user.id).all()
     conversations = db.query(Conversation).filter(
         Conversation.user_id == user.id,
@@ -143,7 +145,7 @@ async def send_message(request: Request, db: Session = Depends(get_db)):
         conv = db.query(Conversation).filter(
             Conversation.id == conversation_id, Conversation.user_id == user.id
         ).first()
-        if not conv:
+        if not conv or conv.profile_id != profile_id:
             return sse_error("Conversation not found")
 
     user_msg = Message(conversation_id=conversation_id, role="user", content=content)

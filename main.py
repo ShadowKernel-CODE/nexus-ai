@@ -19,6 +19,7 @@ from routes_chat import router as chat_router
 from routes_search import router as search_router
 from routes_admin import router as admin_router
 from routes_voice import router as voice_router
+from routes_library import router as library_router
 
 app.include_router(auth_router)
 app.include_router(profiles_router)
@@ -26,6 +27,7 @@ app.include_router(chat_router)
 app.include_router(search_router)
 app.include_router(admin_router)
 app.include_router(voice_router)
+app.include_router(library_router)
 
 
 @app.on_event("startup")

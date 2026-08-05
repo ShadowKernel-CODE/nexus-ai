@@ -4,18 +4,23 @@
 <style>
 @media (max-width:1024px){
     .chat-main{margin-left:0 !important;}
-    .chat-rail{display:none;}
-    .chat-sources{display:none;}
+    .chat-rail{position:fixed !important;top:0;left:0;bottom:0;width:300px;z-index:45;transform:translateX(-100%);box-shadow:var(--shadow-lift);}
+    .chat-rail.open{transform:translateX(0);}
+    .chat-overlay{position:fixed;inset:0;background:rgba(12,9,24,0.6);backdrop-filter:blur(2px);z-index:40;opacity:0;pointer-events:none;transition:opacity 0.25s ease;}
+    .chat-overlay.show{opacity:1;pointer-events:auto;}
     .chat-rail-select{display:block !important;}
+    .mobile-convo-btn{display:flex !important;}
 }
 .chat-main{height:100vh;display:flex;overflow:hidden;margin-left:var(--sidebar-width);}
+.mobile-convo-btn{display:none;}
 </style>
 {% endblock %}
 {% block body %}
 <div class="app-shell">
     {% include "partials/sidebar.html" %}
+    <div class="chat-overlay" id="chatOverlay"></div>
     <main class="chat-main">
-        <div class="chat-rail" style="width:280px;border-right:1px solid var(--border-primary);background:var(--ink-800);display:flex;flex-direction:column;flex-shrink:0;">
+        <div class="chat-rail" id="chatRail" style="width:280px;border-right:1px solid var(--border-primary);background:var(--ink-800);display:flex;flex-direction:column;flex-shrink:0;">
             <div style="padding:16px;border-bottom:1px solid var(--border-primary);">
                 <label class="field-label" style="margin-bottom:8px;">Memory Companion</label>
                 <select id="profileSelect" class="select-field" style="font-size:13px;padding:10px 14px;">
@@ -72,6 +77,9 @@
                 </select>
                 {% if active_profile_id %}
                 <div class="flex items-center" style="gap:8px;flex-shrink:0;">
+                    <button onclick="toggleChatRail()" id="mobileConvoBtn" class="icon-btn mobile-convo-btn" title="Conversations" aria-label="Open conversations" aria-expanded="false">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
                     <button onclick="toggleVoice()" id="voiceBtn" class="icon-btn" title="Toggle voice readout" aria-label="Toggle voice readout" aria-pressed="false">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
                     </button>
@@ -180,6 +188,27 @@ const mobileProfileSelect = document.getElementById('mobileProfileSelect');
 if (mobileProfileSelect) {
     mobileProfileSelect.addEventListener('change', function() {
         if (this.value) window.location.href = '/chat/' + this.value;
+    });
+}
+
+function toggleChatRail() {
+    const rail = document.getElementById('chatRail');
+    const overlay = document.getElementById('chatOverlay');
+    const btn = document.getElementById('mobileConvoBtn');
+    if (!rail) return;
+    const open = rail.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('show', open);
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+const chatOverlayEl = document.getElementById('chatOverlay');
+if (chatOverlayEl) {
+    chatOverlayEl.addEventListener('click', function () {
+        const rail = document.getElementById('chatRail');
+        if (rail) rail.classList.remove('open');
+        chatOverlayEl.classList.remove('show');
+        const btn = document.getElementById('mobileConvoBtn');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
     });
 }
 

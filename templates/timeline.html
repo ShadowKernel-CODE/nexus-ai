@@ -32,11 +32,13 @@
                     <div class="card card-hover" style="padding:16px;margin-left:20px;">
                         <div class="flex items-center justify-between">
                             <h3 style="font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--cream);margin:0;">{{ item.title }}</h3>
-                            <span class="badge {% if item.label in ('Photograph',) %}badge-amber{% elif item.label in ('Audio Recording', 'Video') %}badge-rose{% elif item.label == 'Document' %}badge-green{% else %}badge-purple{% endif %}" style="font-size:11px;">{{ item.label }}</span>
+                            <span class="badge {% if item.label == 'Birth' %}badge-amber{% elif item.label in ('Photograph',) %}badge-amber{% elif item.label in ('Audio Recording', 'Video') %}badge-rose{% elif item.label == 'Document' %}badge-green{% else %}badge-purple{% endif %}" style="font-size:11px;">{{ item.label }}</span>
                         </div>
                         <p style="font-size:12px;color:var(--cream-faint);margin:6px 0 0;">
                             {% if item.date %}{{ item.date }}{% endif %}
-                            <a href="/profiles/{{ profile.id }}" class="no-underline" style="color:#b9ccf5;margin-left:8px;">View memory</a>
+                            {% if item.file_id %}
+                            <a href="/profiles/{{ profile.id }}" class="no-underline" style="color:#cfc5ff;margin-left:8px;">View memory</a>
+                            {% endif %}
                         </p>
                     </div>
                 </div>
@@ -64,7 +66,7 @@
                                 <p style="font-size:14px;font-weight:600;color:var(--cream);margin:0;">{{ item.title }}</p>
                                 <span class="badge badge-cream" style="font-size:11px;">{{ item.label }}</span>
                             </div>
-                            <a href="/profiles/{{ profile.id }}" class="no-underline" style="font-size:12px;color:#b9ccf5;">Add a date &rarr;</a>
+                            <a href="/profiles/{{ profile.id }}" class="no-underline" style="font-size:12px;color:#cfc5ff;">Add a date &rarr;</a>
                         </div>
                         {% endfor %}
                     </div>

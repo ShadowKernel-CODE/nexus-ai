@@ -57,16 +57,13 @@
                                 </span>
                                 {% endif %}
                                 {% if r.relevance_label is defined %}
-                                <span>Relevance: {{ r.relevance_label }}</span>
-                                {% endif %}
-                                {% if r.score is defined %}
-                                <span>{{ (r.score * 100)|round(1) }}% match</span>
+                                <span class="badge badge-amber" style="font-size:11px;">{{ r.relevance_label }}</span>
                                 {% endif %}
                                 {% if r.chunk_index is defined %}
                                 <span>Chunk {{ r.chunk_index + 1 }}</span>
                                 {% endif %}
                                 {% if r.profile_id is defined %}
-                                <a href="/profiles/{{ r.profile_id }}" class="no-underline" style="color:#b9ccf5;">Open profile</a>
+                                <a href="/profiles/{{ r.profile_id }}" class="no-underline" style="color:#cfc5ff;">Open profile</a>
                                 {% endif %}
                             </div>
                         </div>

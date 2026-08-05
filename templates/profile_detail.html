@@ -62,6 +62,34 @@
                 </div>
             </div>
 
+            <div class="card slide-up" style="margin-bottom:24px;">
+                <div style="display:flex;align-items:flex-start;gap:28px;flex-wrap:wrap;">
+                    <div class="completeness-ring">
+                        <svg width="96" height="96" viewBox="0 0 96 96">
+                            <circle class="ring-bg" cx="48" cy="48" r="40" fill="none" stroke-width="7"></circle>
+                            <circle class="ring-fg" cx="48" cy="48" r="40" fill="none" stroke-width="7" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="{{ (251.3 * (1 - completeness.overall / 100))|round }}"></circle>
+                        </svg>
+                        <div class="ring-label">
+                            <b>{{ completeness.overall }}%</b>
+                            <span>Memory profile</span>
+                        </div>
+                    </div>
+                    <div style="flex:1;min-width:260px;">
+                        <h2 class="section-title" style="margin:0 0 4px;">Memory Profile Completeness</h2>
+                        <p class="dim" style="font-size:12px;line-height:1.6;margin:0 0 16px;">More preserved information means a richer memory representation. 100% does not mean a perfect recreation of a human being.</p>
+                        <div style="display:flex;flex-direction:column;gap:9px;">
+                            {% for cat in completeness.categories %}
+                            <div class="comp-bar">
+                                <span class="comp-label">{{ cat.label }}</span>
+                                <div class="comp-track"><div class="comp-fill" style="width:{{ cat.value }}%;"></div></div>
+                                <span class="comp-value">{{ cat.value }}%</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {% if profile.personality_traits or profile.interests or profile.values or profile.favorite_phrases or profile.speaking_style %}
             <div class="card slide-up" style="margin-bottom:24px;">
                 <h2 class="section-title" style="margin:0 0 18px;">About This Person</h2>
@@ -177,9 +205,9 @@
                                         {% if f.status == 'failed' and f.error_message %}
                                         <span class="badge badge-red" title="{{ f.error_message }}" style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.error_message }}</span>
                                         {% endif %}
-                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/download" class="no-underline" style="font-size:12px;color:#b9ccf5;">Download</a>
-                                        {% if f.memory_type == 'photograph' %}
-                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/view" target="_blank" class="no-underline" style="font-size:12px;color:#b9ccf5;">View</a>
+                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/download" class="no-underline" style="font-size:12px;color:#cfc5ff;">Download</a>
+                                        {% if f.memory_type in ('photograph', 'audio', 'video') %}
+                                        <a href="/profiles/{{ profile.id }}/files/{{ f.id }}/view" target="_blank" class="no-underline" style="font-size:12px;color:#cfc5ff;">View</a>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -194,7 +222,8 @@
                     </div>
                     {% else %}
                     <div class="empty-state" style="padding:32px;">
-                        <p class="dim" style="font-size:14px;margin:0;">No memories yet. Upload your first file above.</p>
+                        <p class="dim" style="font-size:14px;margin:0 0 6px;">No memories preserved yet.</p>
+                        <p class="dim" style="font-size:13px;margin:0;">Add a story, photograph, document, or recording above to begin building this memory profile.</p>
                     </div>
                     {% endif %}
                 </div>
