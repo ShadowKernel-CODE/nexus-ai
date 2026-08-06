@@ -31,6 +31,38 @@ def _safe_error(exc: Exception) -> str:
     return f"Voice service error ({type(exc).__name__}). Please try again."
 
 
+async def _synthesize_deepgram(client: httpx.AsyncClient, text: str):
+    return await client.post(
+        f"https://api.deepgram.com/v1/speak?model={settings.DEEPGRAM_TTS_VOICE}",
+        headers={
+            "Authorization": f"Token {settings.DEEPGRAM_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={"text": text[:5000]},
+    )
+
+
+async def _synthesize_elevenlabs(client: httpx.AsyncClient, text: str, vid: str):
+    return await client.post(
+        f"{ELEVENLABS_BASE_URL}/text-to-speech/{vid}",
+        headers={
+            "xi-api-key": settings.ELEVENLABS_API_KEY,
+            "Content-Type": "application/json",
+            "Accept": "audio/mpeg",
+        },
+        json={
+            "text": text[:5000],
+            "model_id": "eleven_multilingual_v2",
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.75,
+                "style": 0.0,
+                "use_speaker_boost": True,
+            },
+        },
+    )
+
+
 @router.post("/tts")
 async def text_to_speech(request: Request, db: Session = Depends(get_db)):
     user = get_user_from_request(request, db)
@@ -44,9 +76,9 @@ async def text_to_speech(request: Request, db: Session = Depends(get_db)):
     if not text:
         return JSONResponse({"error": "No text provided"}, status_code=400)
 
-    if not settings.ELEVENLABS_API_KEY:
+    if not (settings.ELEVENLABS_API_KEY or settings.DEEPGRAM_API_KEY):
         return JSONResponse(
-            {"error": "Text-to-speech is not configured. Please add ELEVENLABS_API_KEY."},
+            {"error": "Text-to-speech is not configured. Please add ELEVENLABS_API_KEY or DEEPGRAM_API_KEY."},
             status_code=500,
         )
 
@@ -58,40 +90,31 @@ async def text_to_speech(request: Request, db: Session = Depends(get_db)):
         if profile and profile.voice_id:
             voice_id = profile.voice_id
 
-    async def synthesize(vid: str):
-        async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.post(
-                f"{ELEVENLABS_BASE_URL}/text-to-speech/{vid}",
-                headers={
-                    "xi-api-key": settings.ELEVENLABS_API_KEY,
-                    "Content-Type": "application/json",
-                    "Accept": "audio/mpeg",
-                },
-                json={
-                    "text": text[:5000],
-                    "model_id": "eleven_multilingual_v2",
-                    "voice_settings": {
-                        "stability": 0.5,
-                        "similarity_boost": 0.75,
-                        "style": 0.0,
-                        "use_speaker_boost": True,
-                    },
-                },
-            )
-        return resp
+    async with httpx.AsyncClient(timeout=60) as client:
+        if settings.DEEPGRAM_API_KEY:
+            try:
+                resp = await _synthesize_deepgram(client, text)
+                if resp.status_code == 200:
+                    ctype = resp.headers.get("content-type") or "audio/mpeg"
+                    return Response(content=resp.content, media_type=ctype)
+            except Exception as e:
+                print(f"Deepgram TTS failed: {e}")
 
-    try:
-        resp = await synthesize(voice_id)
-        if resp.status_code != 200 and voice_id != DEFAULT_VOICE_ID:
-            resp = await synthesize(DEFAULT_VOICE_ID)
-        if resp.status_code != 200:
-            return JSONResponse(
-                {"error": "Text-to-speech failed. Please try again or choose another voice."},
-                status_code=500,
-            )
-        return Response(content=resp.content, media_type="audio/mpeg")
-    except Exception as e:
-        return JSONResponse({"error": _safe_error(e)}, status_code=500)
+        if settings.ELEVENLABS_API_KEY:
+            try:
+                resp = await _synthesize_elevenlabs(client, text, voice_id)
+                if resp.status_code != 200 and voice_id != DEFAULT_VOICE_ID:
+                    resp = await _synthesize_elevenlabs(client, text, DEFAULT_VOICE_ID)
+                if resp.status_code == 200:
+                    ctype = resp.headers.get("content-type") or "audio/mpeg"
+                    return Response(content=resp.content, media_type=ctype)
+            except Exception as e:
+                print(f"ElevenLabs TTS failed: {e}")
+
+    return JSONResponse(
+        {"error": "Text-to-speech failed. Please try again or choose another voice."},
+        status_code=500,
+    )
 
 
 @router.post("/stt")
@@ -100,9 +123,9 @@ async def speech_to_text(request: Request, db: Session = Depends(get_db)):
     if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    if not (settings.OPENAI_API_KEY or settings.ELEVENLABS_API_KEY):
+    if not (settings.DEEPGRAM_API_KEY or settings.OPENAI_API_KEY or settings.ELEVENLABS_API_KEY):
         return JSONResponse(
-            {"error": "Speech-to-text is not configured. Add ELEVENLABS_API_KEY or OPENAI_API_KEY."},
+            {"error": "Speech-to-text is not configured. Add DEEPGRAM_API_KEY, ELEVENLABS_API_KEY, or OPENAI_API_KEY."},
             status_code=500,
         )
 

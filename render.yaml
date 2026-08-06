@@ -15,6 +15,12 @@ services:
         sync: false
       - key: ELEVENLABS_API_KEY
         sync: false
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: DEEPGRAM_STT_MODEL
+        sync: false
+      - key: DEEPGRAM_TTS_VOICE
+        sync: false
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD

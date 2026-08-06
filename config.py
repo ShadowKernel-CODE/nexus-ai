@@ -33,6 +33,10 @@ class Settings(BaseSettings):
 
     ELEVENLABS_API_KEY: str = ""
 
+    DEEPGRAM_API_KEY: str = ""
+    DEEPGRAM_STT_MODEL: str = "nova-3"
+    DEEPGRAM_TTS_VOICE: str = "aura-2-thalia-en"
+
     ADMIN_EMAIL: str = ""
     ADMIN_PASSWORD: str = ""
 

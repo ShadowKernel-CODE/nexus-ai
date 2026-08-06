@@ -216,6 +216,47 @@ def search_similar_memories(
 
 # --- multimodal helpers ------------------------------------------------------
 
+AUDIO_MIME = {
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".webm": "audio/webm",
+    ".m4a": "audio/mp4",
+    ".ogg": "audio/ogg",
+    ".flac": "audio/flac",
+    ".mp4": "video/mp4",
+    ".mov": "video/quicktime",
+    ".aac": "audio/aac",
+}
+
+
+def transcribe_with_deepgram(file_path: str) -> str:
+    """Transcribe an audio file to text using the Deepgram (nova) API."""
+    import httpx
+    if not settings.DEEPGRAM_API_KEY:
+        raise RuntimeError("Transcription requires DEEPGRAM_API_KEY to be configured")
+    ext = os.path.splitext(file_path)[1].lower()
+    mime = AUDIO_MIME.get(ext, "audio/wav")
+    with open(file_path, "rb") as f:
+        resp = httpx.post(
+            f"https://api.deepgram.com/v1/listen?model={settings.DEEPGRAM_STT_MODEL}&smart_format=true&punctuate=true",
+            headers={
+                "Authorization": f"Token {settings.DEEPGRAM_API_KEY}",
+                "Content-Type": mime,
+            },
+            content=f.read(),
+            timeout=300,
+        )
+    resp.raise_for_status()
+    data = resp.json()
+    return (
+        data.get("results", {})
+        .get("channels", [{}])[0]
+        .get("alternatives", [{}])[0]
+        .get("transcript", "")
+        or ""
+    ).strip()
+
+
 def transcribe_with_elevenlabs(file_path: str) -> str:
     """Transcribe an audio file to text using the ElevenLabs Scribe API."""
     import httpx
@@ -237,9 +278,16 @@ def transcribe_with_elevenlabs(file_path: str) -> str:
 def transcribe_audio_file(file_path: str) -> str:
     """Transcribe an audio file to text.
 
-    Prefers ElevenLabs speech-to-text, then falls back to the configured
-    OpenAI-compatible (whisper) endpoint.
+    Tries Deepgram, then ElevenLabs, then the configured OpenAI-compatible
+    (whisper) endpoint, so voice keeps working across providers.
     """
+    if settings.DEEPGRAM_API_KEY:
+        try:
+            text = transcribe_with_deepgram(file_path)
+            if text:
+                return text
+        except Exception as e:
+            print(f"Deepgram transcription failed, falling back: {e}")
     if settings.ELEVENLABS_API_KEY:
         try:
             text = transcribe_with_elevenlabs(file_path)
@@ -251,7 +299,7 @@ def transcribe_audio_file(file_path: str) -> str:
         with open(file_path, "rb") as f:
             result = _client.audio.transcriptions.create(model="whisper-1", file=f)
         return (result.text or "").strip()
-    raise RuntimeError("Transcription requires ELEVENLABS_API_KEY or OPENAI_API_KEY to be configured")
+    raise RuntimeError("Transcription requires DEEPGRAM_API_KEY, ELEVENLABS_API_KEY, or OPENAI_API_KEY")
 
 
 def describe_image_file(file_path: str, ext: str, caption: str = "", context: str = "") -> str:
