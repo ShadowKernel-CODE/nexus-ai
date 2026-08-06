@@ -100,8 +100,11 @@ async def speech_to_text(request: Request, db: Session = Depends(get_db)):
     if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
-    if not settings.OPENAI_API_KEY:
-        return JSONResponse({"error": "Speech-to-text is not configured."}, status_code=500)
+    if not (settings.OPENAI_API_KEY or settings.ELEVENLABS_API_KEY):
+        return JSONResponse(
+            {"error": "Speech-to-text is not configured. Add ELEVENLABS_API_KEY or OPENAI_API_KEY."},
+            status_code=500,
+        )
 
     form = await request.form()
     audio_file = form.get("audio")

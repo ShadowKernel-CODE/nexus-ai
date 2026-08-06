@@ -216,13 +216,42 @@ def search_similar_memories(
 
 # --- multimodal helpers ------------------------------------------------------
 
-def transcribe_audio_file(file_path: str) -> str:
-    """Transcribe an audio file to text using the configured STT (whisper-compatible)."""
-    if not _client:
-        raise RuntimeError("Transcription requires OPENAI_API_KEY to be configured")
+def transcribe_with_elevenlabs(file_path: str) -> str:
+    """Transcribe an audio file to text using the ElevenLabs Scribe API."""
+    import httpx
+    if not settings.ELEVENLABS_API_KEY:
+        raise RuntimeError("Transcription requires ELEVENLABS_API_KEY to be configured")
     with open(file_path, "rb") as f:
-        result = _client.audio.transcriptions.create(model="whisper-1", file=f)
-    return (result.text or "").strip()
+        resp = httpx.post(
+            "https://api.elevenlabs.io/v1/speech-to-text",
+            headers={"xi-api-key": settings.ELEVENLABS_API_KEY},
+            files={"file": f},
+            data={"model_id": "scribe_v1"},
+            timeout=300,
+        )
+    resp.raise_for_status()
+    data = resp.json()
+    return (data.get("text") or "").strip()
+
+
+def transcribe_audio_file(file_path: str) -> str:
+    """Transcribe an audio file to text.
+
+    Prefers ElevenLabs speech-to-text, then falls back to the configured
+    OpenAI-compatible (whisper) endpoint.
+    """
+    if settings.ELEVENLABS_API_KEY:
+        try:
+            text = transcribe_with_elevenlabs(file_path)
+            if text:
+                return text
+        except Exception as e:
+            print(f"ElevenLabs transcription failed, falling back: {e}")
+    if _client:
+        with open(file_path, "rb") as f:
+            result = _client.audio.transcriptions.create(model="whisper-1", file=f)
+        return (result.text or "").strip()
+    raise RuntimeError("Transcription requires ELEVENLABS_API_KEY or OPENAI_API_KEY to be configured")
 
 
 def describe_image_file(file_path: str, ext: str, caption: str = "", context: str = "") -> str:
