@@ -1,6 +1,6 @@
 """
 Seed script for MemoryBot.
-Creates demo users and a polished multimodal memory profile for Margaret.
+Creates demo users and a polished multimodal memory profile for Spider-Man.
 Run: python seed.py
 
 Idempotent: safe to run on every startup. Never creates privileged accounts
@@ -164,6 +164,42 @@ def _make_demo_garden_image(path: str):
     img.save(path, "JPEG", quality=85)
 
 
+def _make_demo_spiderman_image(path: str):
+    """Draw a New York rooftop with a web and spider so the demo photo resembles Spider-Man."""
+    import math
+    from PIL import Image, ImageDraw
+    width, height = 640, 480
+    img = Image.new("RGB", (width, height))
+    d = ImageDraw.Draw(img)
+    # red-to-blue gradient like the suit.
+    for y in range(height):
+        t = y / height
+        r = int(170 + (20 - 170) * t)
+        g = int(20 + (30 - 20) * t)
+        b = int(30 + (160 - 30) * t)
+        d.line([(0, y), (width, y)], fill=(r, g, b))
+    # city skyline silhouette.
+    for x, w, h in [(20, 60, 130), (90, 70, 90), (170, 60, 170), (240, 80, 100),
+                    (330, 70, 150), (410, 90, 80), (500, 70, 120), (570, 70, 60)]:
+        d.rectangle([x, height - h, x + w, height], fill=(12, 12, 26))
+    # web.
+    cx, cy = width // 2, height // 2 - 50
+    radius = 280
+    n_lines = 12
+    for i in range(n_lines):
+        ang = 2 * math.pi * i / n_lines
+        d.line([cx, cy, cx + radius * math.cos(ang), cy + radius * math.sin(ang)], fill=(235, 235, 245), width=2)
+    for r in range(40, radius + 1, 40):
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(235, 235, 245), width=2)
+    # spider.
+    sx, sy = cx - 70, cy + 100
+    d.ellipse([sx - 9, sy - 7, sx + 9, sy + 7], fill=(6, 6, 12))
+    d.ellipse([sx - 5, sy - 12, sx + 5, sy - 2], fill=(6, 6, 12))
+    for dx, dy in [(-1, -1), (1, -1), (-1, 1), (1, 1), (0, -1.5), (0, 1.5), (-1.5, 0), (1.5, 0)]:
+        d.line([sx, sy, sx + dx * 26, sy + dy * 26], fill=(6, 6, 12), width=2)
+    img.save(path, "JPEG", quality=85)
+
+
 def _make_demo_audio(path: str):
     """Write a short soft-tone WAV so the demo audio memory is playable."""
     framerate = 8000
@@ -181,7 +217,7 @@ def _make_demo_audio(path: str):
         w.writeframes(bytes(data))
 
 
-def _ensure_photo_memory(db, profile, title, description, memory_date=""):
+def _ensure_photo_memory(db, profile, title, description, memory_date="", caption="", draw_fn=None):
     original = f"{title}.jpg"
     existing = db.query(MemoryFile).filter(
         MemoryFile.profile_id == profile.id, MemoryFile.original_name == original
@@ -192,7 +228,7 @@ def _ensure_photo_memory(db, profile, title, description, memory_date=""):
     safe = title.lower().replace(" ", "_").replace("'", "")
     filename = f"demo_{safe}.jpg"
     path = os.path.join(settings.UPLOAD_DIR, filename)
-    _make_demo_garden_image(path)
+    (draw_fn or _make_demo_garden_image)(path)
 
     content = f"[Photograph: {original}]\n\n{description}"
     chunks = chunk_text(content)
@@ -205,7 +241,7 @@ def _ensure_photo_memory(db, profile, title, description, memory_date=""):
         extracted_text=content,
         text_chunks=json.dumps(chunks),
         vision_description=description,
-        caption="Grandma in her garden, summer 1998.",
+        caption=caption,
         memory_type="photograph",
         memory_date=memory_date,
         status="ready",
@@ -222,7 +258,7 @@ def _ensure_photo_memory(db, profile, title, description, memory_date=""):
     return f
 
 
-def _ensure_audio_memory(db, profile, title, transcript, memory_date=""):
+def _ensure_audio_memory(db, profile, title, transcript, memory_date="", caption=""):
     original = f"{title}.wav"
     existing = db.query(MemoryFile).filter(
         MemoryFile.profile_id == profile.id, MemoryFile.original_name == original
@@ -245,7 +281,7 @@ def _ensure_audio_memory(db, profile, title, transcript, memory_date=""):
         extracted_text=transcript,
         text_chunks=json.dumps(chunks),
         transcript=transcript,
-        caption="Recorded interview.",
+        caption=caption,
         memory_type="audio",
         memory_date=memory_date,
         status="ready",
@@ -262,7 +298,7 @@ def _ensure_audio_memory(db, profile, title, transcript, memory_date=""):
     return f
 
 
-def _ensure_video_memory(db, profile, title, transcript, memory_date=""):
+def _ensure_video_memory(db, profile, title, transcript, memory_date="", caption=""):
     original = f"{title}.mp4"
     existing = db.query(MemoryFile).filter(
         MemoryFile.profile_id == profile.id, MemoryFile.original_name == original
@@ -306,7 +342,7 @@ def _ensure_video_memory(db, profile, title, transcript, memory_date=""):
         extracted_text=transcript,
         text_chunks=json.dumps(chunks),
         transcript=transcript,
-        caption="Family reunion footage.",
+        caption=caption,
         memory_type="video",
         memory_date=memory_date,
         status="ready",
@@ -368,60 +404,70 @@ def seed():
         db.refresh(demo_user)
         print(f"Created demo user: {DEMO_EMAIL} / {DEMO_PASSWORD}")
 
-    profile = db.query(MemoryProfile).filter(
+    # Replace the old demo companion with Spider-Man.
+    old_profile = db.query(MemoryProfile).filter(
         MemoryProfile.user_id == demo_user.id,
         MemoryProfile.name == "Margaret Johnson",
+    ).first()
+    if old_profile:
+        db.delete(old_profile)
+        db.commit()
+        print("Removed old demo companion: Margaret Johnson")
+
+    profile = db.query(MemoryProfile).filter(
+        MemoryProfile.user_id == demo_user.id,
+        MemoryProfile.name == "Spider-Man",
     ).first()
     if not profile:
         profile = MemoryProfile(
             user_id=demo_user.id,
-            name="Margaret Johnson",
-            description="My beloved grandmother who lived a full and inspiring life. She was known for her kindness, her incredible cooking, and the stories she would tell about growing up during the Great Depression.",
-            relationship_type="Grandmother",
-            date_of_birth="1925-03-15",
-            voice_id="EXAVITQu4vr4xnSDxMaL",
-            personality_traits=["Kind", "Patient", "Strong", "Witty", "Generous", "Resilient"],
-            favorite_phrases=["Every storm runs out of rain", "You catch more flies with honey than vinegar", "A family that eats together stays together"],
-            interests=["Gardening", "Reading", "Cooking", "Church activities", "Storytelling"],
-            speaking_style="Warm and gentle, with a slight Southern drawl. Often used idioms and proverbs.",
-            writing_style="Never wrote much, but her letters were heartfelt and full of wisdom.",
-            values=["Family", "Faith", "Community", "Hard work", "Kindness", "Generosity"],
+            name="Spider-Man",
+            description="Peter Parker — the friendly neighborhood Spider-Man from Queens, New York. A brilliant science student who was bitten by a spider, gained amazing powers, and chose to use them to protect the little guy. Quick with a joke, even quicker with a web line.",
+            relationship_type="Friend",
+            date_of_birth="2001-08-10",
+            voice_id="",
+            personality_traits=["Witty", "Responsible", "Brilliant", "Compassionate", "Self-deprecating", "Hopeful", "Determined"],
+            favorite_phrases=["With great power comes great responsibility", "Just your friendly neighborhood Spider-Man", "I'm always gonna be Spider-Man", "Anyone can wear the mask", "A kid from Queens can be a hero"],
+            interests=["Science and engineering", "Photography", "Web-swinging", "New York City", "Gadgets and computers", "Helping people"],
+            speaking_style="Fast, talkative, and full of banter. Cracks jokes even under pressure to hide his nerves, rambles a little when he's excited, and genuinely cares about everyone he helps.",
+            writing_style="His photos at the Daily Bugle say more than his words, but his captions are energetic, a little nerdy, and proudly from Queens.",
+            values=["Responsibility", "Protecting the innocent", "Family", "Doing the right thing", "Humility", "Hope"],
         )
         db.add(profile)
         db.commit()
         db.refresh(profile)
-        print("Created memory profile: Margaret Johnson")
+        print("Created memory profile: Spider-Man")
 
     sample_memories = [
         {
-            "title": "Childhood during the Depression",
-            "date": "1933-06-14",
-            "content": "Margaret was born in 1925 in a small farming town in Ohio. During the Great Depression, her family lost their farm and had to move to the city. She often told stories about how her mother would stretch a single chicken into meals that lasted three days. Despite the hardships, she always spoke of this time with a sense of resilience and community spirit. Her neighbors would share what little they had, and she learned the value of generosity from watching her parents help others even when they themselves had very little.",
+            "title": "The Bite That Changed Everything",
+            "date": "2016-05-04",
+            "content": "Peter Parker was bitten by a genetically modified spider during a science field trip at the lab. Overnight his body changed — suddenly he had superhuman strength, could stick to walls, and his senses screamed at him a moment before anything dangerous happened. At first he thought it was a crazy allergic reaction. Then he tested his web fluid prototype for real and swung across his first New York rooftop. That's the day the friendly neighborhood Spider-Man was born.",
         },
         {
-            "title": "Meeting Grandpa Robert",
-            "date": "1946-05-20",
-            "content": "Margaret met Robert Johnson at a church social in 1946, just after he returned from serving in World War II. She said he was the most handsome man she had ever seen, with his military uniform and shy smile. Their first date was at the local diner where he bought her a strawberry milkshake. They married in June 1948 and were together for 52 years until Robert passed away in 2000. She often said their secret to a happy marriage was never going to bed angry and always finding something to laugh about.",
+            "title": "Uncle Ben's Lesson",
+            "date": "2016-05-09",
+            "content": "The hardest lesson Peter ever learned came with a price. When he let a thief go — someone he could have easily stopped — that same man went on to hurt Uncle Ben, who died saving Peter's life. In that terrible moment Peter understood what Uncle Ben always said: with great power comes great responsibility. From that day on, being Spider-Man was never about fame or money. It was about showing up for people who have no one else.",
         },
         {
-            "title": "Her Famous Apple Pie",
-            "date": "1965-11-20",
-            "content": "Margaret's apple pie was legendary in the family. The recipe came from her own grandmother and used a secret blend of cinnamon, nutmeg, and a pinch of cardamom. She would pick apples from the tree in her backyard every autumn and spend the whole day baking. The whole house would smell of cinnamon and butter. Every Thanksgiving, she would bake five pies - one for each of her children's families. She never wrote down the recipe, saying it was all in her hands and heart. After she passed, the family tried to recreate it but could never quite get it right.",
-        },
-        {
-            "title": "The Garden",
-            "date": "1998-07-12",
-            "content": "Margaret had the most beautiful garden. She grew roses, tulips, and her famous sunflowers that towered over the fence. Every spring she would plan her garden layout like a general planning a campaign. She loved her tomatoes and would can hundreds of jars every summer to last through winter. The neighborhood children would come over to pick fresh vegetables and she would teach them the names of each plant. Her garden was her pride and joy, and she always said it kept her young.",
-        },
-        {
-            "title": "Stories of the War Years",
-            "date": "1944-09-03",
-            "content": "Although Margaret herself did not serve in the war, she vividly remembered the home front during World War II. She worked at a local factory that made radio parts for the military. She described the camaraderie among the women workers, how they would sing together during lunch breaks and collect scrap metal for the war effort. She kept a scrapbook from those years with newspaper clippings, ration coupons, and letters from soldiers. She said those years taught her that ordinary people could do extraordinary things when they worked together.",
-        },
-        {
-            "title": "Her Love of Books",
+            "title": "Life with Aunt May",
             "date": "",
-            "content": "Margaret was an avid reader her entire life. She belonged to three different book clubs and could often be found in her favorite armchair with a book and a cup of tea. Her favorite author was Jane Austen, and she had read Pride and Prejudice over twenty times. She believed reading was the best form of education and always encouraged the grandchildren to read. Her personal library had over five hundred books, and she could tell you the plot and her opinion of every single one.",
+            "content": "After his parents passed, Peter was raised by Uncle Ben and Aunt May in Forest Hills, Queens. Aunt May still makes him dinner, worries about him nonstop, and has no idea her nephew is Spider-Man — or at least she pretends not to. Peter tries so hard to hide the bruises and the late nights, and she acts like she buys every excuse, because that's what they do for each other. Home is the one place he can take the mask off.",
+        },
+        {
+            "title": "Friendly Neighborhood Spider-Man",
+            "date": "2016-06-01",
+            "content": "Before the big leagues, Spider-Man was just the friendly neighborhood hero of Queens and New York City. He swung people to hospitals, stopped muggings, carried groceries up five flights of stairs, and once saved a kid's science fair project from blowing away. He loved the small stuff — the little guy nobody else noticed. Because that's who he is: a kid from Queens who believes anyone can be a hero if they show up and help.",
+        },
+        {
+            "title": "The Daily Bugle Gig",
+            "date": "2016-07-15",
+            "content": "Peter Parker photographs himself as Spider-Man for the Daily Bugle. It's a whole production — tripod, self-timer, and a bunch of very awkward poses that he retakes until one looks heroic. J. Jonah Jameson still calls Spider-Man a menace and pays him per picture, refusing to believe the wall-crawler isn't a public nuisance. Peter loves it, because the money pays the bills and the job keeps his alter ego alive.",
+        },
+        {
+            "title": "Balancing Two Lives",
+            "date": "",
+            "content": "Being a hero is less about the suit and more about showing up — even on the days Peter would rather stay in bed. He juggles homework, rent, Aunt May, and saving New York, and honestly some days he barely keeps it together. But every time he sees a scared kid look up at him and calm down, he remembers why he does it. With great power comes great responsibility, and he'd rather be tired and useful than safe and useless.",
         },
     ]
 
@@ -431,36 +477,40 @@ def seed():
     # Document memory: a letter preserved as a .docx.
     _ensure_document_memory(
         db, profile,
-        "A Letter from 1948",
-        "Dear Margaret,\n\nIt is the summer of 1948, and I cannot believe that in a few short weeks you will be my wife. When I came home from the war two years ago, I never dared to hope I would find someone like you at that church social.\n\nI still remember the way you smiled when we danced to the radio at the diner, and how you laughed when I spilled that strawberry milkshake. You told me every storm runs out of rain, and you have been my sunshine ever since.\n\nI promise to be by your side, to laugh with you, and never to go to bed angry.\n\nWith all my love,\nRobert",
-        "1948-06-10",
+        "A Letter to Aunt May",
+        "Dear Aunt May,\n\nI know you worry. I see it every time I come home late, or when you look at my hands and ask about the scratches. I'm not great at explaining where I go, and I'm sorry for that — you've always given me everything, and I still can't tell you the whole truth.\n\nBut I want you to know this: everything I do, I do because of you and Ben. You taught me that the people who have nothing are the ones who need someone the most, and that responsibility matters more than what's easy.\n\nOne day I'll tell you everything, I promise. Until then, please don't worry about me. I'm careful — I have to be, because I have you to come home to.\n\nAll my love,\nPeter",
+        "2016-08-10",
     )
 
     # Photograph memory with a vision description.
     _ensure_photo_memory(
         db, profile,
-        "Grandma's Garden 1998",
-        "An older woman is standing beside a flower bed containing roses near a wooden fence. Behind her is a small garden with tomato plants and tall green grass, and a large tree shades part of the yard. The image has a warm summer light.",
-        "1998-07-12",
+        "Rooftop in Queens 2016",
+        "Spider-Man in his red and blue suit stands on a rooftop in Queens, looking out over the New York City skyline at dusk. The city lights glow behind him and a web is strung across the frame. He looks young but steady, one hand raised as if he's about to swing off.",
+        "2016-06-01",
+        caption="Spider-Man on a rooftop, looking out over the city.",
+        draw_fn=_make_demo_spiderman_image,
     )
 
     # Audio memory with transcript.
     _ensure_audio_memory(
         db, profile,
-        "Recorded Interview 2008",
-        "Interviewer: Grandma, how did you and Grandpa Robert meet?\n\nMargaret: Well, it was at a church social in 1946, right after the war. He walked in wearing his uniform and I thought to myself, that young man has kind eyes. He asked me to dance and I said yes. We talked for hours that night. On our first date he took me to the diner and bought me a strawberry milkshake. We married in June of 1948 and were together fifty-two years. The secret was never going to bed angry and always finding something to laugh about.",
-        "2008-11-03",
+        "Voice Memo From the Rooftop",
+        "Hey, it's me. Just sitting up here on the water tower in Queens, watching the lights. Long night — stopped a purse snatcher, helped a cat out of a tree, talked a kid down from being scared. Aunt May thinks I was at the library. I'm not great at this whole keeping-secrets thing, but I'm getting better.\n\nYou know, sometimes I sit here and I think about Uncle Ben, and I wonder if he'd be proud. I hope so. This whole thing — the webs, the swinging, saving people — it's all because of him. With great power comes great responsibility. I'm trying, Ben. I really am.",
+        "2016-06-15",
+        caption="Peter's voice memo from the rooftop.",
     )
 
     # Video memory (best-effort; skipped gracefully if ffmpeg fails).
     _ensure_video_memory(
         db, profile,
-        "Family Reunion 2008",
-        "At the family reunion in the summer of 2008, everyone gathered in Grandma's garden. She sat in her favorite chair under the big tree while the grandchildren took turns telling stories. She laughed the loudest of anyone. That evening she made her famous apple pie for the whole family, and the house smelled of cinnamon all night.",
-        "2008-08-15",
+        "First Swing Through the City",
+        "The first time Peter Parker really let go and swung through the city, it was terrifying and amazing. He launched off a rooftop, felt his stomach drop, and almost smashed into a water tower before his instincts kicked in. Once he got the rhythm — thwip, release, swing, let go — it was the freest he'd ever felt. He landed on a fire escape, laughed until he couldn't breathe, and did it again. That night he knew he was never going to stop.",
+        "2016-06-03",
+        caption="Peter's first real web-swing across the city.",
     )
 
-    _audit(db, demo_user.id, "seed_data", resource_type="system", details="Ensured demo profile and multimodal memories")
+    _audit(db, demo_user.id, "seed_data", resource_type="system", details="Ensured demo Spider-Man profile and multimodal memories")
     db.close()
     print("Seed data ready.")
 
