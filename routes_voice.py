@@ -26,14 +26,30 @@ PRESET_VOICES = [
     {"id": "pNInz6obpgDQGcFmaJgB", "name": "Adam"},
 ]
 
+DEEPGRAM_VOICES = [
+    {"id": "aura-2-thalia-en", "name": "Thalia (Deepgram)"},
+    {"id": "aura-2-asteria-en", "name": "Asteria (Deepgram)"},
+    {"id": "aura-2-athena-en", "name": "Athena (Deepgram)"},
+    {"id": "aura-2-iris-en", "name": "Iris (Deepgram)"},
+    {"id": "aura-2-eris-en", "name": "Eris (Deepgram)"},
+    {"id": "aura-2-orion-en", "name": "Orion (Deepgram)"},
+    {"id": "aura-2-arcas-en", "name": "Arcas (Deepgram)"},
+    {"id": "aura-2-perseus-en", "name": "Perseus (Deepgram)"},
+    {"id": "aura-2-zeus-en", "name": "Zeus (Deepgram)"},
+    {"id": "aura-2-helios-en", "name": "Helios (Deepgram)"},
+    {"id": "aura-2-ares-en", "name": "Ares (Deepgram)"},
+]
+
+DEEPGRAM_VOICE_IDS = {v["id"] for v in DEEPGRAM_VOICES}
+
 
 def _safe_error(exc: Exception) -> str:
     return f"Voice service error ({type(exc).__name__}). Please try again."
 
 
-async def _synthesize_deepgram(client: httpx.AsyncClient, text: str):
+async def _synthesize_deepgram(client: httpx.AsyncClient, text: str, voice_model: str):
     return await client.post(
-        f"https://api.deepgram.com/v1/speak?model={settings.DEEPGRAM_TTS_VOICE}",
+        f"https://api.deepgram.com/v1/speak?model={voice_model}",
         headers={
             "Authorization": f"Token {settings.DEEPGRAM_API_KEY}",
             "Content-Type": "application/json",
@@ -83,17 +99,21 @@ async def text_to_speech(request: Request, db: Session = Depends(get_db)):
         )
 
     voice_id = DEFAULT_VOICE_ID
+    deepgram_voice = settings.DEEPGRAM_TTS_VOICE
     if profile_id:
         profile = db.query(MemoryProfile).filter(
             MemoryProfile.id == profile_id, MemoryProfile.user_id == user.id
         ).first()
         if profile and profile.voice_id:
-            voice_id = profile.voice_id
+            if profile.voice_id in DEEPGRAM_VOICE_IDS:
+                deepgram_voice = profile.voice_id
+            else:
+                voice_id = profile.voice_id
 
     async with httpx.AsyncClient(timeout=60) as client:
         if settings.DEEPGRAM_API_KEY:
             try:
-                resp = await _synthesize_deepgram(client, text)
+                resp = await _synthesize_deepgram(client, text, deepgram_voice)
                 if resp.status_code == 200:
                     ctype = resp.headers.get("content-type") or "audio/mpeg"
                     return Response(content=resp.content, media_type=ctype)
@@ -161,22 +181,30 @@ async def list_voices(request: Request, db: Session = Depends(get_db)):
     user = get_user_from_request(request, db)
     if not user:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
-    if not settings.ELEVENLABS_API_KEY:
+
+    voices = []
+    if settings.DEEPGRAM_API_KEY:
+        voices.extend(DEEPGRAM_VOICES)
+
+    if settings.ELEVENLABS_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.get(
+                    f"{ELEVENLABS_BASE_URL}/voices",
+                    headers={"xi-api-key": settings.ELEVENLABS_API_KEY},
+                )
+            if resp.status_code == 200:
+                data = resp.json()
+                el_voices = [
+                    {"id": v["voice_id"], "name": v["name"]}
+                    for v in data.get("voices", [])
+                ]
+                voices.extend(el_voices if el_voices else PRESET_VOICES)
+            else:
+                voices.extend(PRESET_VOICES)
+        except Exception:
+            voices.extend(PRESET_VOICES)
+
+    if not voices:
         return JSONResponse(PRESET_VOICES)
-    try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.get(
-                f"{ELEVENLABS_BASE_URL}/voices",
-                headers={"xi-api-key": settings.ELEVENLABS_API_KEY},
-            )
-        if resp.status_code == 200:
-            data = resp.json()
-            voices = [
-                {"id": v["voice_id"], "name": v["name"]}
-                for v in data.get("voices", [])
-            ]
-            if voices:
-                return JSONResponse(voices)
-    except Exception:
-        pass
-    return JSONResponse(PRESET_VOICES)
+    return JSONResponse(voices)
