@@ -70,7 +70,7 @@ def test_fallback_never_invents():
     reply = generate_fallback_response(
         "What did you give me for my 10th birthday?", context, no_memories
     )
-    assert "don't have a preserved memory" in reply.lower()
+    assert "don't remember" in reply.lower()
     for forbidden in ("bicycle", "red bicycle", "a red bike"):
         assert forbidden.lower() not in reply.lower()
 
@@ -202,4 +202,4 @@ def test_unsupported_question_not_fabricated(client):
     normalized = " ".join(full.split())
     for forbidden in ("red bicycle", "bicycle", "I gave you a"):
         assert forbidden.lower() not in normalized.lower(), "AI must not fabricate undocumented memories"
-    assert "don't have a preserved memory" in normalized.lower() or "no preserved memory" in normalized.lower()
+    assert "don't remember" in normalized.lower()
